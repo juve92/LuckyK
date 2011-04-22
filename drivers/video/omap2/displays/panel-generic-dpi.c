@@ -209,29 +209,29 @@ static struct panel_config generic_dpi_panels[] = {
 		.name			= "powertip_ph480272t",
 	},
 
-	/* Innolux AT070TN83 */
+        /* Samsung AMS452GN05 */
 	{
 		{
-			.x_res		= 800,
-			.y_res		= 480,
+			.x_res		= 480,
+			.y_res		= 800,
 
-			.pixel_clock	= 40000,
+			.pixel_clock	= 25600,
 
-			.hsw		= 48,
-			.hfp		= 1,
-			.hbp		= 1,
+			.hfp		= 16,
+			.hsw		= 2,
+			.hbp		= 16,
 
-			.vsw		= 3,
-			.vfp		= 12,
-			.vbp		= 25,
-		},
+			.vfp		= 9,
+			.vsw		= 2,
+			.vbp		= 3,
 		.acbi			= 0x0,
 		.acb			= 0x28,
 		.config			= OMAP_DSS_LCD_TFT | OMAP_DSS_LCD_IVS |
-					  OMAP_DSS_LCD_IHS,
+					OMAP_DSS_LCD_IHS | OMAP_DSS_LCD_IPC |
+					OMAP_DSS_LCD_IEO | OMAP_DSS_LCD_ONOFF,
 		.power_on_delay		= 0,
 		.power_off_delay	= 0,
-		.name			= "innolux_at070tn83",
+		.name			= "samsung_ams452gn05",
 	},
 
 	/* NEC NL2432DR22-11B */
@@ -341,50 +341,6 @@ static struct panel_config generic_dpi_panels[] = {
 		.power_on_delay		= 0,
 		.power_off_delay	= 0,
 		.name			= "microtips_umsh_8173md",
-	},
-
-	/* OrtusTech COM43H4M10XTC */
-	{
-		{
-			.x_res		= 480,
-			.y_res		= 272,
-
-			.pixel_clock	= 8000,
-
-			.hsw		= 41,
-			.hfp		= 8,
-			.hbp		= 4,
-
-			.vsw		= 10,
-			.vfp		= 4,
-			.vbp		= 2,
-		},
-		.config			= OMAP_DSS_LCD_TFT,
-
-		.name			= "ortustech_com43h4m10xtc",
-	},
-
-	/* Innolux AT080TN52 */
-	{
-		{
-			.x_res = 800,
-			.y_res = 600,
-
-			.pixel_clock	= 41142,
-
-			.hsw		= 20,
-			.hfp		= 210,
-			.hbp		= 46,
-
-			.vsw		= 10,
-			.vfp		= 12,
-			.vbp		= 23,
-		},
-		.acb			= 0x0,
-		.config			= OMAP_DSS_LCD_TFT | OMAP_DSS_LCD_IVS |
-					  OMAP_DSS_LCD_IHS | OMAP_DSS_LCD_IEO,
-
-		.name			= "innolux_at080tn52",
 	},
 };
 
