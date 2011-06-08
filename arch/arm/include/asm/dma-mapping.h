@@ -14,6 +14,25 @@
 #error Please update to __arch_pfn_to_dma
 #endif
 
+struct cma;
+
+#ifdef CONFIG_CMA
+static inline struct cma *get_dev_cma_area(struct device *dev)
+{
+	return dev->archdata.cma_area;
+}
+
+static inline void set_dev_cma_area(struct device *dev, struct cma *cma)
+{
+	dev->archdata.cma_area = cma;
+}
+#else
+static inline struct cma *get_dev_cma_area(struct device *dev)
+{
+	return NULL;
+}
+#endif
+
 /*
  * dma_to_pfn/pfn_to_dma/dma_to_virt/virt_to_dma are architecture private
  * functions used internally by the DMA-mapping API to provide DMA
