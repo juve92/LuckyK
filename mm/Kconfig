@@ -346,6 +346,27 @@ choice
 	  benefit.
 endchoice
 
+config CMA
+	bool "Contiguous Memory Allocator"
+	select CMA_MIGRATE_TYPE
+	select MIGRATION
+	select GENERIC_ALLOCATOR
+	help
+	  This enables the Contiguous Memory Allocator which allows drivers
+	  to allocate big physically-contiguous blocks of memory for use with
+	  hardware components that do not support I/O map nor scatter-gather.
+
+	  For more information see <include/linux/cma.h>.  If unsure, say "n".
+
+config CMA_DEBUG
+	bool "CMA debug messages (DEVELOPEMENT)"
+	depends on CMA
+	help
+	  Turns on debug messages in CMA.  This produces KERN_DEBUG
+	  messages for every CMA call as well as various messages while
+	  processing calls such as cm_alloc().  This option does not
+	  affect warning and error messages.
+
 #
 # UP and nommu archs use km based percpu allocator
 #
