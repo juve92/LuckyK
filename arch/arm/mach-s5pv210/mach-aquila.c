@@ -21,6 +21,8 @@
 #include <linux/gpio_keys.h>
 #include <linux/input.h>
 #include <linux/gpio.h>
+#include <linux/cma.h>
+#include <linux/dma-mapping.h>
 
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -650,6 +652,19 @@ static void __init aquila_map_io(void)
 	s5p_set_timer_source(S5P_PWM3, S5P_PWM4);
 }
 
+unsigned long cma_area_start;
+unsigned long cma_area_size = 32 << 20;
+
+static void __init aquila_reserve(void)
+{
+	unsigned long ret = cma_reserve(cma_area_start, cma_area_size);
+	
+	if (!IS_ERR_VALUE(ret)) {
+		cma_area_start = ret;
+		printk(KERN_INFO "cma: reserved %ld bytes at %lx\n", cma_area_size, cma_area_start);
+	}
+}
+
 static void __init aquila_machine_init(void)
 {
 	/* PMIC */
@@ -672,6 +687,16 @@ static void __init aquila_machine_init(void)
 	s3c_fb_set_platdata(&aquila_lcd_pdata);
 
 	platform_add_devices(aquila_devices, ARRAY_SIZE(aquila_devices));
+
+	if (cma_area_start) {
+		struct cma *cma;
+		cma = cma_create(cma_area_start, cma_area_size);
+		if (cma) {
+			set_dev_cma_area(&s5p_device_fimc0.dev, cma);
+			set_dev_cma_area(&s5p_device_fimc1.dev, cma);
+			set_dev_cma_area(&s5p_device_fimc2.dev, cma);
+		}
+	}
 }
 
 MACHINE_START(AQUILA, "Aquila")
@@ -683,4 +708,5 @@ MACHINE_START(AQUILA, "Aquila")
 	.map_io		= aquila_map_io,
 	.init_machine	= aquila_machine_init,
 	.timer		= &s5p_timer,
+	.reserve	= aquila_reserve,
 MACHINE_END
