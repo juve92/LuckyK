@@ -174,6 +174,7 @@ SYSCALL_DEFINE1(syncfs, int, fd)
  */
 int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
 {
+
 #ifdef CONFIG_FSYNC_CONTROL
  if (!fsynccontrol_fsync_enabled())
  return 0;
@@ -200,6 +201,11 @@ int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
 
 out:
 	return ret;
+
+	if (!file->f_op || !file->f_op->fsync)
+		return -EINVAL;
+	return file->f_op->fsync(file, start, end, datasync);
+
 }
 EXPORT_SYMBOL(vfs_fsync_range);
 
