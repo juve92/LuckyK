@@ -582,8 +582,7 @@ static inline void blk_free_request(struct request_queue *q, struct request *rq)
 }
 
 static struct request *
-blk_alloc_request(struct request_queue *q, struct io_cq *icq,
-		  unsigned int flags, gfp_t gfp_mask)
+blk_alloc_request(struct request_queue *q, unsigned int flags, gfp_t gfp_mask)
 {
 	struct request *rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
 
@@ -594,7 +593,6 @@ blk_alloc_request(struct request_queue *q, struct io_cq *icq,
 
 	rq->cmd_flags = flags | REQ_ALLOCED;
 
-	if (priv) {
 
 	if (flags & REQ_ELVPRIV) {
 		rq->elv.icq = icq;
@@ -666,12 +664,13 @@ static void __freed_request(struct request_queue *q, int sync)
  * A request has just been released.  Account for it, update the full and
  * congestion status, wake up any waiters.   Called under q->queue_lock.
  */
-static void freed_request(struct request_queue *q, int sync, int priv)
+static void freed_request(struct request_queue *q, unsigned int flags)
 {
 	struct request_list *rl = &q->rq;
+	int sync = rw_is_sync(flags);
 
 	rl->count[sync]--;
-	if (priv)
+	if (flags & REQ_ELVPRIV)
 		rl->elvpriv--;
 
 	__freed_request(q, sync);
@@ -713,7 +712,6 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
 	struct io_context *ioc;
 	struct io_cq *icq = NULL;
 	const bool is_sync = rw_is_sync(rw_flags) != 0;
-	int may_queue, priv = 0;
 	bool retried = false;
 	int may_queue;
 retry:
@@ -792,13 +790,16 @@ retry:
 	    !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags)) {
 		rw_flags |= REQ_ELVPRIV;
 		rl->elvpriv++;
+
 		if (et->icq_cache && ioc)
 			icq = ioc_lookup_icq(ioc, q);
+
 	}
 
 	if (blk_queue_io_stat(q))
 		rw_flags |= REQ_IO_STAT;
 	spin_unlock_irq(q->queue_lock);
+
 
 	/* create icq if missing */
 	if (unlikely(et->icq_cache && !icq))
@@ -817,7 +818,7 @@ retry:
 		 * wait queue, but this is pretty rare.
 		 */
 		spin_lock_irq(q->queue_lock);
-		freed_request(q, is_sync, priv);
+		freed_request(q, rw_flags);
 
 		/*
 		 * in the very unlikely event that allocation failed and no
@@ -1111,14 +1112,13 @@ void __blk_put_request(struct request_queue *q, struct request *req)
 	 * it didn't come out of our reserved rq pools
 	 */
 	if (req->cmd_flags & REQ_ALLOCED) {
-		int is_sync = rq_is_sync(req) != 0;
-		int priv = req->cmd_flags & REQ_ELVPRIV;
+		unsigned int flags = req->cmd_flags;
 
 		BUG_ON(!list_empty(&req->queuelist));
 		BUG_ON(!hlist_unhashed(&req->hash));
 
 		blk_free_request(q, req);
-		freed_request(q, is_sync, priv);
+		freed_request(q, flags);
 	}
 }
 EXPORT_SYMBOL_GPL(__blk_put_request);
