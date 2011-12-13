@@ -312,6 +312,10 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
 	struct blkio_cgroup *blkcg;
 	struct request_queue *q = td->queue;
 
+	/* no throttling for dead queue */
+	if (unlikely(blk_queue_dead(q)))
+		return NULL;
+
 	rcu_read_lock();
 	blkcg = task_blkio_cgroup(current);
 	tg = throtl_find_tg(td, blkcg);
@@ -348,6 +352,12 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
 
 	/* Group allocated and queue is still alive. take the lock */
 	spin_lock_irq(q->queue_lock);
+
+	/* Make sure @q is still alive */
+	if (unlikely(blk_queue_dead(q))) {
+		kfree(tg);
+		return NULL;
+	}
 
 	/*
 	 * Initialize the new group. After sleeping, read the blkcg again.

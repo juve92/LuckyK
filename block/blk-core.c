@@ -561,8 +561,9 @@ EXPORT_SYMBOL(blk_init_allocated_queue);
 bool blk_get_queue(struct request_queue *q)
 {
 	if (likely(!blk_queue_dead(q))) {
-		__blk_get_queue(q);
-		return true;
+		kobject_get(&q->kobj);
+		return 0;
+
 	}
 
 	return false;
@@ -862,6 +863,9 @@ static struct request *get_request_wait(struct request_queue *q, int rw_flags,
 	while (!rq) {
 		DEFINE_WAIT(wait);
 		struct request_list *rl = &q->rq;
+
+		if (unlikely(blk_queue_dead(q)))
+			return NULL;
 
 		prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
 				TASK_UNINTERRUPTIBLE);
