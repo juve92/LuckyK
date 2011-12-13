@@ -557,14 +557,14 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
 }
 EXPORT_SYMBOL(blk_init_allocated_queue);
 
-int blk_get_queue(struct request_queue *q)
+bool blk_get_queue(struct request_queue *q)
 {
-	if (likely(!test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
-		kobject_get(&q->kobj);
-		return 0;
+	if (likely(!blk_queue_dead(q))) {
+		__blk_get_queue(q);
+		return true;
 	}
 
-	return 1;
+	return false;
 }
 EXPORT_SYMBOL(blk_get_queue);
 
