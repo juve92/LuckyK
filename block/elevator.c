@@ -1024,9 +1024,13 @@ static int elevator_switch(struct request_queue *q, struct elevator_type *new_e)
 			goto fail_register;
 	}
 
-	/*
-	 * finally exit old elevator and turn off BYPASS.
-	 */
+	/* done, clear io_cq's, switch elevators and turn off BYPASS */
+	spin_lock_irq(q->queue_lock);
+	ioc_clear_queue(q);
+	old_elevator = q->elevator;
+	q->elevator = e;
+	spin_unlock_irq(q->queue_lock);
+
 	elevator_exit(old_elevator);
 	spin_lock_irq(q->queue_lock);
 	elv_quiesce_end(q);
