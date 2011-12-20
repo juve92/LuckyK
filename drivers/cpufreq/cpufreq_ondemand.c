@@ -30,7 +30,7 @@
 
 #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
 #define DEF_FREQUENCY_UP_THRESHOLD		(80)
-#define DEF_SAMPLING_DOWN_FACTOR		(1)
+#define DEF_SAMPLING_DOWN_FACTOR		(10)
 #define MAX_SAMPLING_DOWN_FACTOR		(100000)
 #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
 #define MICRO_FREQUENCY_UP_THRESHOLD		(95)
@@ -119,6 +119,11 @@ static struct dbs_tuners {
 	unsigned int boosted;
 	unsigned int freq_boost_time;
 	unsigned int boostfreq;
+
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+	unsigned int two_phase_freq;
+#endif
+
 } dbs_tuners_ins = {
 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
 	.sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
@@ -127,6 +132,10 @@ static struct dbs_tuners {
 	.powersave_bias = 0,
 	.freq_boost_time = DEFAULT_FREQ_BOOST_TIME,
 	.boostfreq = 700000,
+
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+	.two_phase_freq = 0,
+#endif
 };
 
 static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
@@ -325,6 +334,10 @@ static void update_sampling_rate(unsigned int new_rate)
 	}
 }
 
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+show_one(two_phase_freq, two_phase_freq);
+#endif
+
 static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
 				   const char *buf, size_t count)
 {
@@ -336,6 +349,24 @@ static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
 	update_sampling_rate(input);
 	return count;
 }
+
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+static ssize_t store_two_phase_freq(struct kobject *a, struct attribute *b,
+				   const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+	ret = sscanf(buf, "%u", &input);
+	if (ret != 1)
+		return -EINVAL;
+
+	mutex_lock(&dbs_mutex);
+	dbs_tuners_ins.two_phase_freq = input;
+	mutex_unlock(&dbs_mutex);
+
+	return count;
+}
+#endif
 
 static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
 				   const char *buf, size_t count)
@@ -478,6 +509,10 @@ define_one_global_rw(powersave_bias);
 define_one_global_rw(boostpulse);
 define_one_global_rw(boostfreq);
 
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+define_one_global_rw(two_phase_freq);
+#endif
+
 static struct attribute *dbs_attributes[] = {
 	&sampling_rate_min.attr,
 	&sampling_rate.attr,
@@ -488,6 +523,10 @@ static struct attribute *dbs_attributes[] = {
 	&io_is_busy.attr,
 	&boostpulse.attr,
 	&boostfreq.attr,
+
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+	&two_phase_freq.attr,
+#endif
 	NULL
 };
 
@@ -509,12 +548,28 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
 			CPUFREQ_RELATION_L : CPUFREQ_RELATION_H);
 }
 
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+int set_two_phase_freq(int cpufreq)
+{
+	dbs_tuners_ins.two_phase_freq = cpufreq;
+	return 0;
+}
+#endif
+
 static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 {
 	/* Extrapolated load of this CPU */
 	unsigned int load_at_max_freq = 0;
 	unsigned int avg_load_at_max_freq = 0;
 	unsigned int max_load_freq;
+
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+	static unsigned int phase = 0;
+	static unsigned int counter = 0;
+#endif
+
+        this_dbs_info->freq_lo = 0;
+        policy = this_dbs_info->cur_policy;
 
 	struct cpufreq_policy *policy;
 	unsigned int j;
@@ -627,10 +682,30 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	/* Check for frequency increase */
 	if (max_load_freq > dbs_tuners_ins.up_threshold * policy->cur) {
 		/* If switching to max speed, apply sampling_down_factor */
+#ifndef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
 		if (policy->cur < policy->max)
 			this_dbs_info->rate_mult =
 				dbs_tuners_ins.sampling_down_factor;
 		dbs_freq_increase(policy, policy->max);
+#else
+		if (counter < 5) {
+			counter++;
+			if (counter > 2) {
+				/* change to busy phase */
+				phase = 1;
+			}
+		}
+		if (dbs_tuners_ins.two_phase_freq != 0 && phase == 0) {
+			/* idle phase */
+			dbs_freq_increase(policy, dbs_tuners_ins.two_phase_freq);
+		} else {
+			/* busy phase */
+			if (policy->cur < policy->max)
+				this_dbs_info->rate_mult =
+					dbs_tuners_ins.sampling_down_factor;
+			dbs_freq_increase(policy, policy->max);
+		}
+#endif
 		return;
 	}
 
@@ -640,6 +715,16 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		dbs_tuners_ins.boostfreq = policy->cur;
 		return;
 	}
+
+#ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND_2_PHASE
+	if (counter > 0) {
+		counter--;
+		if (counter == 0) {
+			/* change to idle phase */
+			phase = 0;
+		}
+	}
+#endif
 
 	/* Check for frequency decrease */
 	/* if we cannot reduce the frequency anymore, break out early */
@@ -885,7 +970,6 @@ static void __exit cpufreq_gov_dbs_exit(void)
 {
 	cpufreq_unregister_governor(&cpufreq_gov_ondemand);
 }
-
 
 MODULE_AUTHOR("Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>");
 MODULE_AUTHOR("Alexey Starikovskiy <alexey.y.starikovskiy@intel.com>");
