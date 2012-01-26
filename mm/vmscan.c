@@ -629,8 +629,8 @@ void putback_lru_page(struct page *page)
 	int was_unevictable = PageUnevictable(page);
 
 	VM_BUG_ON(PageLRU(page));
-if (active)
-
+	if (active)
+		SetPageWasActive(page);
 
 redo:
 	ClearPageUnevictable(page);
@@ -1258,7 +1258,7 @@ static unsigned long clear_active_flags(struct list_head *page_list,
 		if (PageActive(page)) {
 			lru += LRU_ACTIVE;
 			ClearPageActive(page);
-                        
+			SetPageWasActive(page);
 			nr_active += numpages;
 		}
 		if (count)
@@ -1680,7 +1680,7 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
 		}
 
 		ClearPageActive(page);	/* we are de-activating */
-                
+		SetPageWasActive(page);
 		list_add(&page->lru, &l_inactive);
 	}
 
