@@ -879,16 +879,6 @@ void dsscomp_gralloc_init(struct dsscomp_dev *cdev_)
 		if (!gsync_cachep)
 			pr_err("DSSCOMP: %s: can't create cache\n", __func__);
 	}
-
-	if (!clone_wq) {
-		clone_wq = create_singlethread_workqueue("dsscomp_clone_wq");
-		if (!clone_wq)
-			dev_err(DEV(cdev),
-				"Unable to create workqueue for FB cloning");
-
-		init_waitqueue_head(&transfer_waitq);
-		init_waitqueue_head(&dma_waitq);
-	}
 }
 
 void dsscomp_gralloc_exit(void)
