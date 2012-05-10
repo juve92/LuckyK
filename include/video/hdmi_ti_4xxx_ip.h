@@ -56,6 +56,7 @@ struct hdmi_ip_data {
 	unsigned long hdmi_core_av_offset;
 	unsigned long hdmi_pll_offset;
 	unsigned long hdmi_phy_offset;
+	unsigned long hdmi_cec_offset;
 };
 
 struct hdmi_video_timings {
@@ -422,4 +423,22 @@ void hdmi_ti_4xxx_wp_audio_enable(struct hdmi_ip_data *ip_data, bool idle);
 
 int hdmi_ti_4xxx_set_wait_soft_reset(struct hdmi_ip_data *ip_data);
 int hdmi_ti_4xx_check_aksv_data(struct hdmi_ip_data *ip_data);
+void hdmi_core_vsi_config(struct hdmi_ip_data *ip_data,
+		struct hdmi_core_vendor_specific_infoframe *config);
+int hdmi_ti_4xx_cec_get_rx_cmd(struct hdmi_ip_data *ip_data,
+		char *rx_cmd);
+int hdmi_ti_4xx_cec_read_rx_cmd(struct hdmi_ip_data *ip_data,
+		struct cec_rx_data *rx_data);
+int hdmi_ti_4xx_cec_transmit_cmd(struct hdmi_ip_data *ip_data,
+		struct cec_tx_data *data, int *cmd_acked);
+int hdmi_ti_4xxx_power_on_cec(struct hdmi_ip_data *ip_data);
+int hdmi_ti_4xxx_cec_get_rx_int(struct hdmi_ip_data *ip_data);
+int hdmi_ti_4xxx_cec_clr_rx_int(struct hdmi_ip_data *ip_data, int cec_rx);
+int hdmi_ti_4xxx_cec_get_listening_mask(struct hdmi_ip_data *ip_data);
+int hdmi_ti_4xxx_cec_add_listening_device(struct hdmi_ip_data *ip_data,
+		int device_id, int clear);
+int hdmi_ti_4xxx_cec_set_listening_mask(struct hdmi_ip_data *ip_data,
+		int mask);
+
+
 #endif
