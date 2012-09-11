@@ -173,7 +173,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	rcu_read_unlock();
 	read_unlock(&tasklist_lock);
     if (selected)
-        compact_nodes();
+        compact_nodes(false);
 	return rem;
 }
 
