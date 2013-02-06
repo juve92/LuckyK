@@ -55,6 +55,7 @@ static struct omap_rproc_timers_info ipu_timers[] = {
 	{ .id = 9 },
 	{ .id = 11 },
 #endif
+	{ .id = 4 },
 };
 
 static struct omap_rproc_pdata omap4_rproc_data[] = {
@@ -207,6 +208,18 @@ static int __init omap_rproc_init(void)
 					omap_rproc_latency,
 					ARRAY_SIZE(omap_rproc_latency),
 					false);
+
+		/*
+		 * decrement the timer count for OMAP5 as ipu will be run
+		 * in SMP-mode. OMAP4 is hard-coded to run non-SMP, and this
+		 * logic needs to be adjusted if OMAP4 IPU is also required to
+		 * be run in SMP-mode.
+		 */
+		if (!cpu_is_omap44xx() && !strcmp(oh_name, "ipu_c0"))
+			omap4_rproc_data[i].timers_cnt--;
+
+		device_initialize(&pdev->dev);
+
 		if (IS_ERR(od)) {
 			pr_err("Could not build omap_device for %s:%s\n",
 							pdev_name, oh_name);
