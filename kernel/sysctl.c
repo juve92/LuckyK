@@ -97,6 +97,7 @@ extern unsigned int core_pipe_limit;
 extern int pid_max;
 extern int min_free_kbytes;
 extern int extra_free_kbytes;
+extern int wmark_min_kbytes, wmark_low_kbytes, wmark_high_kbytes;
 extern int min_free_order_shift;
 extern int pid_max_min, pid_max_max;
 extern int sysctl_drop_caches;
