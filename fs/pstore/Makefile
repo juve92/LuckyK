@@ -4,4 +4,4 @@
 
 obj-y += pstore.o
 
-pstore-objs += inode.o platform.o
+pstore-objs += inode.o platform.o ram.o
