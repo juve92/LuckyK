@@ -384,6 +384,39 @@ static ssize_t manager_cpr_coef_store(struct omap_overlay_manager *mgr,
 	return size;
 }
 
+static ssize_t manager_gamma_show(
+               struct omap_overlay_manager *mgr, char *buf)
+{
+       return snprintf(buf, PAGE_SIZE, "%d\n", mgr->info.gamma);
+}
+
+static ssize_t manager_gamma_store(
+               struct omap_overlay_manager *mgr,
+               const char *buf, size_t size)
+{
+       struct omap_overlay_manager_info info;
+       int gamma_value;
+       int r;
+
+       if (sscanf(buf, "%d", &gamma_value) != 1)
+               return -EINVAL;
+
+       mgr->get_manager_info(mgr, &info);
+
+       info.gamma = gamma_value;
+
+       r = mgr->set_manager_info(mgr, &info);
+       if (r)
+               return r;
+
+       r = mgr->apply(mgr);
+       if (r)
+               return r;
+
+       return size;
+
+}
+
 struct manager_attribute {
 	struct attribute attr;
 	ssize_t (*show)(struct omap_overlay_manager *, char *);
