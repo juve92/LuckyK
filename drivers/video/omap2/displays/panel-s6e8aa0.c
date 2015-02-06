@@ -20,6 +20,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/moduleparam.h>
 #include <linux/debugfs.h>
 #include <linux/delay.h>
 #include <linux/err.h>
@@ -68,6 +69,12 @@ enum {
 
 #define DRIVER_NAME "s6e8aa0_i2c"
 #define DEVICE_NAME "s6e8aa0_i2c"
+
+static int contrast = -20;
+module_param(contrast, int, 0755);
+EXPORT_SYMBOL(contrast);
+
+
 
 static int s6e8aa0_update(struct omap_dss_device *dssdev,
 		      u16 x, u16 y, u16 w, u16 h);
@@ -766,7 +773,8 @@ static void s6e8aa0_setup_gamma_regs(struct s6e8aa0_data *s6, u8 gamma_regs[],
 
 		v[V1] = s6e8aa0_gamma_lookup(s6, brightness, bv->v1, c);
 		offset = s6->gamma_reg_offsets.v[1][c][V1];
-		adj_max = min(V1_ADJ_MAX, V1_ADJ_MAX - offset);
+		offset = offset - min(max(contrast, -32), 24);
+                adj_max = min(V1_ADJ_MAX, V1_ADJ_MAX - offset);
 		adj_min = max(0, 0 - offset);
 		adj = v1_to_v1adj(v[V1], v0) - offset;
 		if (adj < adj_min || adj > adj_max) {
@@ -775,11 +783,11 @@ static void s6e8aa0_setup_gamma_regs(struct s6e8aa0_data *s6, u8 gamma_regs[],
 			adj = clamp_t(int, adj, adj_min, adj_max);
 		}
 #ifdef CONFIG_COLOR_CONTROL
-		gamma_regs[gamma_reg_index(c, V1)] = min(max(adj +  v1_offset[c], 0), 255);
+               gamma_regs[gamma_reg_index(c, V1)] = min(max(adj + v1_offset[c], 0), 255);
 #else
-		gamma_regs[gamma_reg_index(c, V1)] = adj;
-#endif
-		v[V1] = v1adj_to_v1(adj + offset, v0);
+                gamma_regs[gamma_reg_index(c, V1)] = adj;
+#endif		
+                v[V1] = v1adj_to_v1(adj + offset, v0);
 
 		v[V255] = s6e8aa0_gamma_lookup(s6, brightness, BV_255, c);
 		offset = s6->gamma_reg_offsets.v[1][c][V255];
@@ -1140,12 +1148,12 @@ static void s6e8aa0_adjust_brightness_from_mtp(struct s6e8aa0_data *s6)
 void colorcontrol_update(bool multiplier_updated)
 {
     if (multiplier_updated)
-	s6e8aa0_adjust_brightness_from_mtp(s6_data);
+       s6e8aa0_adjust_brightness_from_mtp(s6_data);
 
     if (lcd_dev->state == OMAP_DSS_DISPLAY_ACTIVE) {
-	dsi_bus_lock(lcd_dev);
-	s6e8aa0_update_brightness(lcd_dev);
-	dsi_bus_unlock(lcd_dev);
+       dsi_bus_lock(lcd_dev);
+       s6e8aa0_update_brightness(lcd_dev);
+       dsi_bus_unlock(lcd_dev);
     }
 
     return;
@@ -1663,14 +1671,14 @@ static int s6e8aa0_probe(struct omap_dss_device *dssdev)
 		s6->force_update = true;
 
 #ifdef CONFIG_COLOR_CONTROL
-	lcd_dev = dssdev;
-	s6_data = s6;
+       lcd_dev = dssdev;
+       s6_data = s6;
 
-	colorcontrol_register_offset(v1_offset);
-	colorcontrol_register_multiplier(s6->pdata->factory_info->color_adj.mult);
+       colorcontrol_register_offset(v1_offset);
+       colorcontrol_register_multiplier(s6->pdata->factory_info->color_adj.mult);
 #endif
 
-	dev_dbg(&dssdev->dev, "s6e8aa0_probe\n");
+        dev_dbg(&dssdev->dev, "s6e8aa0_probe\n");
 	return ret;
 
 err_backlight_device_register:
