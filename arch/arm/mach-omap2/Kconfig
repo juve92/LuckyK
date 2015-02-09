@@ -533,6 +533,22 @@ config TUNA_1_5_GHZ_MPU_OPP
          If enabled, 1.5 GHz can be selected as CPU
          overclock frequency.
 
+config OMAP4_OVERRIDE_MPU_TRIM
+       bool "Override factory-set trim value for MPU DPLL clock"
+       depends on ARCH_OMAP4
+       default y
+       help
+         Override factory-set trim value for MPU DPLL to allow locking at
+         rates >2.4GHz (required for MPU frequencies >1.2GHz).
+
+config OMAP_SMARTREFLEX_CUSTOM_SENSOR
+       bool "Enable support for custom NSensor and PSensor values"
+       depends on OMAP_SMARTREFLEX
+       default y
+       help
+         Enable support for custom NSensor and PSensor values in the
+         voltage definitions used for SmartReflex calibration.
+
 
 endmenu
 
