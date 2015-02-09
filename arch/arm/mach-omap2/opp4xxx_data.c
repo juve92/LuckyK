@@ -395,11 +395,11 @@ static struct omap_opp_def __initdata omap446x_opp_def_list[] = {
 	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 525000000, OMAP4460_VDD_MPU_OPP75_UV),
 	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 768000000, OMAP4460_VDD_MPU_OPP100_UV),
 	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 998400000, OMAP4460_VDD_MPU_OPPTURBO_UV),
-	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1200000000, OMAP4460_VDD_MPU_OPPNITRO_UV),
-	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1350000000, OMAP4460_VDD_MPU_OPPNITROS_UV),
-	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1500000000, OMAP4460_VDD_MPU_OPPNITROSB_UV),
-	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1632000000, OMAP4460_VDD_MPU_OPPUBER_UV),
-	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", false, 1747200000, OMAP4460_VDD_MPU_OPPFIRE_UV),
+	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 1200000000, OMAP4460_VDD_MPU_OPPNITRO_UV),
+	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 1350000000, OMAP4460_VDD_MPU_OPPNITROS_UV),
+	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 1500000000, OMAP4460_VDD_MPU_OPPNITROSB_UV),
+	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 1632000000, OMAP4460_VDD_MPU_OPPUBER_UV),
+	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 1747200000, OMAP4460_VDD_MPU_OPPFIRE_UV),
 #else
 	/* MPU OPP1 - OPP50 */
 	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 350000000, OMAP4460_VDD_MPU_OPP50_UV),
@@ -434,6 +434,9 @@ static struct omap_opp_def __initdata omap446x_opp_def_list[] = {
 	OPP_INITIALIZER("gpu", "dpll_per_m7x2_ck", "core", true, 307200000, OMAP4460_VDD_CORE_OPP100_UV),
 	/* SGX OPP3 - OPPOV */
 	OPP_INITIALIZER("gpu", "dpll_per_m7x2_ck", "core", true, 384000000, OMAP4460_VDD_CORE_OPP100_OV_UV),
+#ifdef CONFIG_OMAP4460_GPU_OVERCLOCK
+        OPP_INITIALIZER("gpu", "dpll_per_m7x2_ck", "core", true, 512000000, OMAP4460_VDD_CORE_OPP100_OV_UV),
+#endif
 	/* FDIF OPP1 - OPP25 */
 	OPP_INITIALIZER("fdif", "fdif_fck", "core", true, 32000000, OMAP4460_VDD_CORE_OPP50_UV),
 	/* FDIF OPP2 - OPP50 */
