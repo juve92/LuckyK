@@ -236,7 +236,6 @@ struct omap_volt_data omap446x_vdd_mpu_volt_data[] = {
 	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP100_UV, 0, OMAP44XX_CONTROL_FUSE_MPU_OPP100, 0xf9, 0x16, OMAP_ABB_NOMINAL_OPP),
 	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPPTURBO_UV, 10000, OMAP44XX_CONTROL_FUSE_MPU_OPPTURBO, 0xfa, 0x23, OMAP_ABB_NOMINAL_OPP),
 	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPPNITRO_UV, 0, OMAP44XX_CONTROL_FUSE_MPU_OPPNITRO, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
-	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPPNITROSB_UV, 0, OMAP44XX_CONTROL_FUSE_MPU_OPPNITROSB, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
         VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP_1_UV, 40000, OMAP44XX_CONTROL_FUSE_MPU_OPPNITRO, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
         VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP_2_UV, 80000, OMAP44XX_CONTROL_FUSE_MPU_OPPNITRO, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
         VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP_3_UV, 150000, OMAP44XX_CONTROL_FUSE_MPU_OPPNITRO, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
@@ -282,7 +281,7 @@ static struct omap_vdd_dep_volt omap446x_vdd_mpu_core_dep_data[] = {
         {.main_vdd_volt = OMAP4460_VDD_MPU_OPP_1_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP75_UV},
         {.main_vdd_volt = OMAP4460_VDD_MPU_OPP_2_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP75_UV},
         {.main_vdd_volt = OMAP4460_VDD_MPU_OPP_3_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP75_UV},
-	{.main_vdd_volt = OMAP4460_VDD_MPU_OPPNITROSB_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
+
 };
 
 struct omap_vdd_dep_info omap446x_vddmpu_dep_info[] = {
@@ -747,12 +746,14 @@ int __init omap4_opp_init(void)
 		omap4_opp_enable("iva", 500000000);
 
 	/* Enable Nitro and NitroSB MPU OPPs */
-	omap4_mpu_opp_enable(1228800000);
-        omap4_mpu_opp_enable(1344000000);
-        omap4_mpu_opp_enable(1420800000);
+	omap4_opp_enable("mpu", 1228800000);
+        omap4_opp_enable("mpu", 1344000000);
+        omap4_opp_enable("mpu", 1420800000);
 #ifdef CONFIG_TUNA_1_5_GHZ_MPU_OPP
- omap4_mpu_opp_enable(1536000000);
+ omap4_opp_enable("mpu", 1536000000);
 #endif
 
+out:
+        return r;
 }
 device_initcall(omap4_opp_init);
