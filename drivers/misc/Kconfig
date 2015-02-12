@@ -601,6 +601,12 @@ config COLOR_CONTROL
 	help
 	  Say Y here to enable Color Control
 
+config CUSTOM_VOLTAGE
+	bool "Support for Custom Voltage"
+	default y
+	help
+	Say Y here to enable Custom Voltage
+
 config SOUND_CONTROL
        bool "Enable support for Sound Control"
        default y

@@ -28,6 +28,10 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 
+#ifdef CONFIG_CUSTOM_VOLTAGE
+#include <linux/custom_voltage.h>
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/regulator.h>
 
@@ -2908,6 +2912,8 @@ static int __init regulator_init_complete(void)
 
 	mutex_lock(&regulator_list_mutex);
 
+
+
 	/* If we have a full configuration then disable any regulators
 	 * which are not in use or always_on.  This will become the
 	 * default behaviour in the future.
@@ -2955,6 +2961,12 @@ unlock:
 	}
 
 	mutex_unlock(&regulator_list_mutex);
+
+#ifdef CONFIG_CUSTOM_VOLTAGE
+ customvoltage_register_regulatormutex(&regulator_list_mutex);
+ customvoltage_register_regulators(&regulator_list);
+ customvoltage_init();
+#endif
 
 	return 0;
 }
