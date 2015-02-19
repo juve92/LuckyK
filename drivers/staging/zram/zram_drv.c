@@ -44,7 +44,7 @@ static int zram_major;
 struct zram *zram_devices;
 
 /* Module params (documentation at end) */
-static unsigned int num_devices;
+static unsigned int num_devices = 1;
 
 static void zram_stat_inc(u32 *v)
 {
