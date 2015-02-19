@@ -65,9 +65,6 @@ static u32 hwc_virt_to_phys(u32 arg)
 	if (pmd_none(*pmd) || pmd_bad(*pmd))
 		return 0;
 
-	ptep = pte_offset_map(pmd, arg);
-	if (ptep && pte_present(*ptep))
-		return (PAGE_MASK & *ptep) | (~PAGE_MASK & arg);
 
 	return 0;
 }

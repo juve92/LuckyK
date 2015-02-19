@@ -161,9 +161,6 @@ u32 tiler_virt2phys(u32 usr)
 	if (pmd_none(*pmd) || pmd_bad(*pmd))
 		return 0;
 
-	ptep = pte_offset_map(pmd, usr);
-	if (ptep && pte_present(*ptep))
-		return (*ptep & PAGE_MASK) | (~PAGE_MASK & usr);
 
 	return 0;
 }
