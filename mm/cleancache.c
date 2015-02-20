@@ -166,7 +166,7 @@ void __cleancache_invalidate_page(struct address_space *mapping, struct page *pa
 		VM_BUG_ON(!PageLocked(page));
 		if (cleancache_get_key(mapping->host, &key) >= 0) {
 			(*cleancache_ops.invalidate_page)(pool_id, key, page->index);
-			cleancache_invalidate++;
+			cleancache_invalidates++;
 		}
 	}
 }
