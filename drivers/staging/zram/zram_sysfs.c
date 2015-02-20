@@ -114,8 +114,8 @@ static ssize_t reset_store(struct device *dev,
 		fsync_bdev(bdev);
 
         down_write(&zram->init_lock);
-	if (zram->init_done)
-		zram_reset_device(zram);
+	
+		
         up_write(&zram->init_lock);
 
 	return len;

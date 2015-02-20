@@ -111,11 +111,11 @@ static int __init zram_comp_init(void)
 static inline void zram_comp_exit(void)
 {
  /* free percpu transforms */
-+ if (zram_comp_pcpu_tfms)
-+ free_percpu(zram_comp_pcpu_tfms);
-+}
-+
-+
+ if (zram_comp_pcpu_tfms)
+ free_percpu(zram_comp_pcpu_tfms);
+}
+
+
 /* Crypto API features: percpu code */
 #define ZRAM_DSTMEM_ORDER 1
 static DEFINE_PER_CPU(u8 *, zram_dstmem);
@@ -269,35 +269,6 @@ static int page_zero_filled(void *ptr)
 	return 1;
 }
 
-static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
-{
-	if (!zram->disksize) {
-		pr_info(
-		"disk size not provided. You can use disksize_kb module "
-		"param to specify size.\nUsing default: (%u%% of RAM).\n",
-		default_disksize_perc_ram
-		);
-		zram->disksize = default_disksize_perc_ram *
-					(totalram_bytes / 100);
-	}
-
-	if (zram->disksize > 2 * (totalram_bytes)) {
-		pr_info(
-		"There is little point creating a zram of greater than "
-		"twice the size of memory since we expect a 2:1 compression "
-		"ratio. Note that zram uses about 0.1%% of the size of "
-		"the disk when not in use so a huge zram is "
-		"wasteful.\n"
-		"\tMemory Size: %zu kB\n"
-		"\tSize you selected: %llu kB\n"
-		"Continuing anyway ...\n",
-		totalram_bytes >> 10, zram->disksize
-		);
-	}
-
-	zram->disksize &= PAGE_MASK;
-}
-
 static void zram_free_page(struct zram *zram, size_t index)
 {
 	unsigned long handle = zram->table[index].handle;
@@ -319,11 +290,8 @@ static void zram_free_page(struct zram *zram, size_t index)
 	        if (unlikely(size > max_zpage_size))
                         zram_stat_dec(&zram->stats.bad_compress);
 
-
-	}
-
 	zs_free(zram->mem_pool, handle);
-	if (clen <= PAGE_SIZE / 2)
+	if (size <= PAGE_SIZE / 2)
 		zram_stat_dec(&zram->stats.good_compress);
 
 
@@ -527,8 +495,6 @@ src = uncmem;
  if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
  kunmap_atomic(src);
 
-		}
-
 		zs_unmap_object(zram->mem_pool, handle);
 
 		zram->table[index].handle = handle;
@@ -636,7 +602,7 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
 {
 	if (unlikely(
 		(bio->bi_sector >= (zram->disksize >> SECTOR_SHIFT)) ||
-		(bio->bi_sector & (ZRAM_SECTORS_PER_LOGICAL_BLOCK - 1)) ||
+		(bio->bi_sector & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)) ||
 		(bio->bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))) {
 
 		return 0;
@@ -649,7 +615,7 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
 /*
  * Handler function for all zram I/O requests.
  */
-static int zram_make_request(struct request_queue *queue, struct bio *bio)
+static void zram_make_request(struct request_queue *queue, struct bio *bio)
 {
 	struct zram *zram = queue->queuedata;
 
@@ -733,7 +699,7 @@ int zram_init_device(struct zram *zram)
 		return 0;
 	}
 
-	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
+	
 
 
 
@@ -897,7 +863,7 @@ static int __init zram_init(void)
 if (zram_cpu_init()) {
  pr_err("Per-cpu initialization failed\n");
  ret = -ENOMEM;
- goto free_comp;
+ goto out;
  }
 
 	if (num_devices > max_num_devices) {

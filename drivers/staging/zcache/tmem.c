@@ -92,7 +92,7 @@ static struct tmem_obj
 			rbnode = &(*rbnode)->rb_left;
 			break;
 		case 1:
-			rbnode = &(*rbnode->rb)_right;
+			rbnode = &(*rbnode)->rb_right;
 			break;
 		}
 	}
@@ -567,7 +567,7 @@ int tmem_put(struct tmem_pool *pool, struct tmem_oid *oidp, uint32_t index,
 	BUG_ON(obj == NULL);
 	BUG_ON(((objnew != obj) && (objfound != obj)) || (objnew == objfound));
 	pampd = (*tmem_pamops.create)(data, size, raw, ephemeral,
- obj->pool, &obj->oid, index)
+ obj->pool, &obj->oid, index);
 	if (unlikely(pampd == NULL))
 		goto free;
 	ret = tmem_pampd_add_to_obj(obj, index, pampd);
