@@ -197,6 +197,7 @@ static int __init omap_l2_cache_init(void)
 	 * the performance.
 	 */
 	aux_ctrl |= ((0x3 << L2X0_AUX_CTRL_WAY_SIZE_SHIFT) |
+                (1 << 3) |
 		(1 << L2X0_AUX_CTRL_SHARE_OVERRIDE_SHIFT) |
 		(1 << L2X0_AUX_CTRL_EARLY_BRESP_SHIFT));
 
@@ -213,11 +214,13 @@ static int __init omap_l2_cache_init(void)
 	 * It may cause single cache line memory corruption, leave it disabled
 	 * on all devices
 	 */
-	por_ctrl &= ~(1 << L2X0_PREFETCH_DOUBLE_LINEFILL_SHIFT);
-	if (!mpu_prefetch_disable_errata) {
-		por_ctrl &= ~L2X0_POR_OFFSET_MASK;
-		por_ctrl |= L2X0_POR_OFFSET_VALUE;
-	}
+	if (omap_rev() == OMAP4460_REV_ES1_1)
+                por_ctrl |= (1 << L2X0_PREFETCH_DATA_PREFETCH_SHIFT) |
+                        (1 << L2X0_PREFETCH_DOUBLE_LINEFILL_SHIFT) |
+                        (1 << L2X0_PREFETCH_DLF_ON_WRAP_READ_SHIFT);
+
+        por_ctrl &= ~0x1f;
+        por_ctrl |= L2X0_POR_OFFSET_VALUE;
 
 	/* Set POR through PPA service only in EMU/HS devices */
 	if (omap_type() != OMAP2_DEVICE_TYPE_GP)
