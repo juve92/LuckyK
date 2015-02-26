@@ -232,12 +232,14 @@ EXPORT_SYMBOL_GPL(dma_buf_map_attachment);
 *
 */
 void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
-struct sg_table *sg_table)
+struct sg_table *sg_table,
+enum dma_data_direction direction)
 {
 if (WARN_ON(!attach || !attach->dmabuf || !sg_table))
 return;
 mutex_lock(&attach->dmabuf->lock);
-attach->dmabuf->ops->unmap_dma_buf(attach, sg_table);
+attach->dmabuf->ops->unmap_dma_buf(attach, sg_table,
+direction);
 mutex_unlock(&attach->dmabuf->lock);
 }
 EXPORT_SYMBOL_GPL(dma_buf_unmap_attachment);

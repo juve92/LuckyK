@@ -58,7 +58,8 @@ void (*detach)(struct dma_buf *, struct dma_buf_attachment *);
 struct sg_table * (*map_dma_buf)(struct dma_buf_attachment *,
 enum dma_data_direction);
 void (*unmap_dma_buf)(struct dma_buf_attachment *,
-struct sg_table *);
+struct sg_table *,
+enum dma_data_direction);
 /* TODO: Add try_map_dma_buf version, to return immed with -EBUSY
 * if the call would block.
 */
@@ -111,7 +112,7 @@ struct dma_buf *dma_buf_get(int fd);
 void dma_buf_put(struct dma_buf *dmabuf);
 struct sg_table *dma_buf_map_attachment(struct dma_buf_attachment *,
 enum dma_data_direction);
-void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *);
+void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *, enum dma_data_direction);
 #else
 static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
 struct device *dev)
@@ -147,7 +148,7 @@ struct dma_buf_attachment *attach, enum dma_data_direction write)
 return ERR_PTR(-ENODEV);
 }
 static inline void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
-struct sg_table *sg)
+struct sg_table *sg, enum dma_data_direction dir)
 {
 return;
 }
