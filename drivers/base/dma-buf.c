@@ -217,9 +217,7 @@ struct sg_table *sg_table = ERR_PTR(-EINVAL);
 might_sleep();
 if (WARN_ON(!attach || !attach->dmabuf))
 return ERR_PTR(-EINVAL);
-mutex_lock(&attach->dmabuf->lock);
 sg_table = attach->dmabuf->ops->map_dma_buf(attach, direction);
-mutex_unlock(&attach->dmabuf->lock);
 return sg_table;
 }
 EXPORT_SYMBOL_GPL(dma_buf_map_attachment);
@@ -237,9 +235,9 @@ enum dma_data_direction direction)
 {
 if (WARN_ON(!attach || !attach->dmabuf || !sg_table))
 return;
-mutex_lock(&attach->dmabuf->lock);
+
 attach->dmabuf->ops->unmap_dma_buf(attach, sg_table,
 direction);
-mutex_unlock(&attach->dmabuf->lock);
+
 }
 EXPORT_SYMBOL_GPL(dma_buf_unmap_attachment);
