@@ -303,7 +303,7 @@ FN_ENTRY
 		beq	3f
 		load2l	r5, r6
 		orr	r4, r4, r5, pushbits #8
-		mov	r5, r5, pull #24
+		mov	r5, r5, pullbits #24
 		orr	r5, r5, r6, pushbits #8
 		stmia	dst!, {r4, r5}
 		adcs	sum, sum, r4
