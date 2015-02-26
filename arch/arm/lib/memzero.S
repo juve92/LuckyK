@@ -26,8 +26,8 @@ ENTRY(__memzero)
  * use the LR
  */
 1:      cmp	r1, #8
-+       blt     5f
-+       mov	r3, r2
+       blt     5f
+       mov	r3, r2
 
 cmp	r1, #64
  push {r4}
