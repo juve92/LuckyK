@@ -154,7 +154,7 @@ struct device *dev)
 {
 struct dma_buf_attachment *attach;
 int ret;
-if (WARN_ON(!dmabuf || !dev || !dmabuf->ops))
+if (WARN_ON(!dmabuf || !dev))
 return ERR_PTR(-EINVAL);
 attach = kzalloc(sizeof(struct dma_buf_attachment), GFP_KERNEL);
 if (attach == NULL)
@@ -187,7 +187,7 @@ EXPORT_SYMBOL_GPL(dma_buf_attach);
 */
 void dma_buf_detach(struct dma_buf *dmabuf, struct dma_buf_attachment *attach)
 {
-if (WARN_ON(!dmabuf || !attach || !dmabuf->ops))
+if (WARN_ON(!dmabuf || !attach))
 return;
 mutex_lock(&dmabuf->lock);
 list_del(&attach->node);
@@ -213,10 +213,9 @@ enum dma_data_direction direction)
 {
 struct sg_table *sg_table = ERR_PTR(-EINVAL);
 might_sleep();
-if (WARN_ON(!attach || !attach->dmabuf || !attach->dmabuf->ops))
+if (WARN_ON(!attach || !attach->dmabuf))
 return ERR_PTR(-EINVAL);
 mutex_lock(&attach->dmabuf->lock);
-if (attach->dmabuf->ops->map_dma_buf)
 sg_table = attach->dmabuf->ops->map_dma_buf(attach, direction);
 mutex_unlock(&attach->dmabuf->lock);
 return sg_table;
@@ -233,11 +232,9 @@ EXPORT_SYMBOL_GPL(dma_buf_map_attachment);
 void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
 struct sg_table *sg_table)
 {
-if (WARN_ON(!attach || !attach->dmabuf || !sg_table
-|| !attach->dmabuf->ops))
+if (WARN_ON(!attach || !attach->dmabuf || !sg_table))
 return;
 mutex_lock(&attach->dmabuf->lock);
-if (attach->dmabuf->ops->unmap_dma_buf)
 attach->dmabuf->ops->unmap_dma_buf(attach, sg_table);
 mutex_unlock(&attach->dmabuf->lock);
 }
