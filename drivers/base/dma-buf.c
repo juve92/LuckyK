@@ -92,12 +92,12 @@ EXPORT_SYMBOL_GPL(dma_buf_export);
 *
 * On success, returns an associated 'fd'. Else, returns error.
 */
-int dma_buf_fd(struct dma_buf *dmabuf)
+int dma_buf_fd(struct dma_buf *dmabuf, int flags)
 {
 int error, fd;
 if (!dmabuf || !dmabuf->file)
 return -EINVAL;
-error = get_unused_fd();
+error = get_unused_fd_flags(flags);
 if (error < 0)
 return error;
 fd = error;
