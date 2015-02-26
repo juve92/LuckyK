@@ -32,7 +32,6 @@ ENTRY(memset)
  orr r1, r1, r1, lsl #16
  blt 5f
  mov	r3, r1
-#if ! CALGN(1)+0
 
 cmp	r2, #64
  push {r4}
