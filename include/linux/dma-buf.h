@@ -87,6 +87,8 @@ int (*begin_cpu_access)(struct dma_buf *, size_t, size_t,
  void (*kunmap_atomic)(struct dma_buf *, unsigned long, void *);
  void *(*kmap)(struct dma_buf *, unsigned long);
  void (*kunmap)(struct dma_buf *, unsigned long, void *);
+
+int (*mmap)(struct dma_buf *, struct vm_area_struct *vma);
 };
 /**
 * struct dma_buf - shared buffer object
@@ -158,6 +160,9 @@ void *dma_buf_kmap_atomic(struct dma_buf *, unsigned long);
 void dma_buf_kunmap_atomic(struct dma_buf *, unsigned long, void *);
 void *dma_buf_kmap(struct dma_buf *, unsigned long);
 void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
+
+int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
+ unsigned long);
 #else
 static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
 struct device *dev)
@@ -230,6 +235,13 @@ static inline void *dma_buf_kmap(struct dma_buf *dmabuf, unsigned long pnum)
 static inline void dma_buf_kunmap(struct dma_buf *dmabuf,
  unsigned long pnum, void *vaddr)
 {
+}
+
+static inline int dma_buf_mmap(struct dma_buf *dmabuf,
+ struct vm_area_struct *vma,
+ unsigned long pgoff)
+{
+ return -ENODEV;
 }
 
 #endif /* CONFIG_DMA_SHARED_BUFFER */
