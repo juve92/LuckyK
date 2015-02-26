@@ -158,7 +158,7 @@ if (WARN_ON(!dmabuf || !dev))
 return ERR_PTR(-EINVAL);
 attach = kzalloc(sizeof(struct dma_buf_attachment), GFP_KERNEL);
 if (attach == NULL)
-goto err_alloc;
+return ERR_PTR(-ENOMEM);
 mutex_lock(&dmabuf->lock);
 attach->dev = dev;
 attach->dmabuf = dmabuf;
@@ -170,8 +170,7 @@ goto err_attach;
 list_add(&attach->node, &dmabuf->attachments);
 mutex_unlock(&dmabuf->lock);
 return attach;
-err_alloc:
-return ERR_PTR(-ENOMEM);
+
 err_attach:
 kfree(attach);
 mutex_unlock(&dmabuf->lock);
