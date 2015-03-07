@@ -15,6 +15,32 @@
 ARM(    .p2align 5	)
 THUMB(  .p2align 2	)
 
+#ifdef NEON_MEMORY_FUNCTIONS
+	.fpu neon
+#endif
+	.align	5
+	.word	0
+/*
+ * Align the pointer in r0.  r3 contains the number of bytes that we are
+ * mis-aligned by, and r1 is the number of bytes.  If r1 < 4, then we
+ * don't bother; we use byte stores instead.
+ */
+1:	subs	r1, r1, #4		@ 1 do we have enough
+	blt	5f			@ 1 bytes to align with?
+	cmp	r3, #2			@ 1
+	strltb	r2, [r0], #1		@ 1
+	strleb	r2, [r0], #1		@ 1
+	strb	r2, [r0], #1		@ 1
+	add	r1, r1, r3		@ 1 (r1 = r1 - (4 - r3))
+/*
+ * The pointer is now aligned and the length is adjusted.  Try doing the
+ * memzero again.
+ */
+	.syntax unified
+
+
+>>>>>>> 07e6d9c... neon optimized memset and memzero with cflags for mem-etc thanks to https://github.com/hglm/test-arm-kernel-memcpy/commits/master
+
 ENTRY(__memzero)
 	ands r3, r0, #3
         mov	ip, r0

@@ -15,9 +15,16 @@
 #include <linux/linkage.h>
 #include <asm/assembler.h>
 	.text
+
  .syntax unified
 ARM( .p2align 5	)
 THUMB( .p2align 2	)
+
+#ifdef NEON_MEMORY_FUNCTIONS
+	.fpu neon
+#endif
+	.align	5
+	.word	0
 
 
 ENTRY(memset)
