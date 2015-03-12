@@ -1985,7 +1985,7 @@ comment "At least one emulation must be selected"
 
 config FPE_NWFPE
 	bool "NWFPE math emulation"
-	depends on (!AEABI || OABI_COMPAT) && !THUMB2_KERNEL
+	depends on (AEABI || OABI_COMPAT) && THUMB2_KERNEL
 	help
 	  Say Y to include the NWFPE floating point emulator in the kernel.
 	  This is necessary to run most binaries. Linux does not currently
@@ -2009,7 +2009,7 @@ config FPE_NWFPE_XP
 
 config FPE_FASTFPE
 	bool "FastFPE math emulation (EXPERIMENTAL)"
-	depends on (!AEABI || OABI_COMPAT) && !CPU_32v3 && EXPERIMENTAL
+	depends on (AEABI || OABI_COMPAT) && !CPU_32v3 && EXPERIMENTAL
 	help
 	  Say Y here to include the FAST floating point emulator in the kernel.
 	  This is an experimental much faster emulator which now also has full
