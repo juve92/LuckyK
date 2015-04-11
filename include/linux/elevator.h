@@ -98,7 +98,6 @@ struct elevator_type
 
 	/* managed by elevator core */
 	char icq_cache_name[ELV_NAME_MAX + 5];	/* elvname + "_io_cq" */
-	struct list_head list;
 
 };
 
