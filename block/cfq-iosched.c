@@ -20,7 +20,7 @@
  * tunables
  */
 /* max queue in one round of service */
-static const int cfq_quantum = 8;
+static const int cfq_quantum = 7;
 static const int cfq_fifo_expire[2] = { HZ / 4, HZ / 8 };
 /* maximum backwards seek, in KiB */
 static const int cfq_back_max = 16 * 1024;
@@ -31,13 +31,13 @@ static int cfq_slice_async = HZ / 25;
 static const int cfq_slice_async_rq = 2;
 static int cfq_slice_idle = HZ / 125;
 static int cfq_group_idle = HZ / 125;
-static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
+static const int cfq_target_latency = HZ * 4/10; /* 400 ms */
 static const int cfq_hist_divisor = 4;
 
 /*
  * offset from end of service tree
  */
-#define CFQ_IDLE_DELAY		(HZ / 5)
+#define CFQ_IDLE_DELAY		(HZ / 4)
 
 /*
  * below this threshold, we consider thinktime immediate
@@ -49,7 +49,7 @@ static const int cfq_hist_divisor = 4;
 #define CFQ_SERVICE_SHIFT       12
 
 #define CFQQ_SEEK_THR		(sector_t)(8 * 100)
-#define CFQQ_CLOSE_THR		(sector_t)(8 * 1024)
+#define CFQQ_CLOSE_THR		(sector_t)(7 * 1024)
 #define CFQQ_SECT_THR_NONROT	(sector_t)(2 * 32)
 #define CFQQ_SEEKY(cfqq)	(hweight32(cfqq->seek_history) > 32/8)
 
