@@ -440,29 +440,14 @@ static void dsi_completion_handler(void *data, u32 mask)
 static inline int wait_for_bit_change(struct platform_device *dsidev,
 		const struct dsi_reg idx, int bitnum, int value)
 {
-	unsigned long timeout;
-	ktime_t wait;
-	int t;
+	int t = 100000;
 
-	/* first busyloop to see if the bit changes right away */
-	t = 100;
-	while (t-- > 0) {
-		if (REG_GET(dsidev, idx, bitnum, bitnum) == value)
-			return value;
+	while (REG_GET(dsidev, idx, bitnum, bitnum) != value) {
+		if (--t == 0)
+			return !value;
 	}
 
-	/* then loop for 500ms, sleeping for 1ms in between */
-	timeout = jiffies + msecs_to_jiffies(500);
-	while (time_before(jiffies, timeout)) {
-		if (REG_GET(dsidev, idx, bitnum, bitnum) == value)
-			return value;
-
-		wait = ns_to_ktime(1000 * 1000);
-		set_current_state(TASK_UNINTERRUPTIBLE);
-		schedule_hrtimeout(&wait, HRTIMER_MODE_REL);
-	}
-
-	return !value;
+	return value;
 }
 
 #ifdef DEBUG
@@ -3429,11 +3414,9 @@ static int dsi_enter_ulps(struct platform_device *dsidev)
 	if (dsi->ulps_enabled)
 		return 0;
 
-	/* DDR_CLK_ALWAYS_ON */
 	if (REG_GET(dsidev, DSI_CLK_CTRL, 13, 13)) {
-		dsi_if_enable(dsidev, 0);
-		REG_FLD_MOD(dsidev, DSI_CLK_CTRL, 0, 13, 13);
-		dsi_if_enable(dsidev, 1);
+		DSSERR("DDR_CLK_ALWAYS_ON enabled when entering ULPS\n");
+		return -EIO;
 	}
 
 	dsi_sync_vc(dsidev, 0);
