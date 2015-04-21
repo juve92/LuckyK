@@ -5,8 +5,6 @@
 
 #ifdef CONFIG_BLOCK
 
-struct io_cq;
-
 typedef int (elevator_merge_fn) (struct request_queue *, struct request **,
 				 struct bio *);
 
@@ -27,8 +25,6 @@ typedef struct request *(elevator_request_list_fn) (struct request_queue *, stru
 typedef void (elevator_completed_req_fn) (struct request_queue *, struct request *);
 typedef int (elevator_may_queue_fn) (struct request_queue *, int);
 
-typedef void (elevator_init_icq_fn) (struct io_cq *);
-typedef void (elevator_exit_icq_fn) (struct io_cq *);
 typedef int (elevator_set_req_fn) (struct request_queue *, struct request *, gfp_t);
 typedef void (elevator_put_req_fn) (struct request *);
 typedef void (elevator_activate_req_fn) (struct request_queue *, struct request *);
@@ -56,9 +52,6 @@ struct elevator_ops
 	elevator_request_list_fn *elevator_former_req_fn;
 	elevator_request_list_fn *elevator_latter_req_fn;
 
-	elevator_init_icq_fn *elevator_init_icq_fn;	/* see iocontext.h */
-	elevator_exit_icq_fn *elevator_exit_icq_fn;	/* ditto */
-
 	elevator_set_req_fn *elevator_set_req_fn;
 	elevator_put_req_fn *elevator_put_req_fn;
 
@@ -66,6 +59,7 @@ struct elevator_ops
 
 	elevator_init_fn *elevator_init_fn;
 	elevator_exit_fn *elevator_exit_fn;
+	void (*trim)(struct io_context *);
 };
 
 #define ELV_NAME_MAX	(16)
@@ -81,24 +75,11 @@ struct elv_fs_entry {
  */
 struct elevator_type
 {
-
 	struct list_head list;
-
-	/* managed by elevator core */
-	struct kmem_cache *icq_cache;
-
-	/* fields provided by elevator implementation */
-
 	struct elevator_ops ops;
-	size_t icq_size;	/* see iocontext.h */
-	size_t icq_align;	/* ditto */
 	struct elv_fs_entry *elevator_attrs;
 	char elevator_name[ELV_NAME_MAX];
 	struct module *elevator_owner;
-
-	/* managed by elevator core */
-	char icq_cache_name[ELV_NAME_MAX + 5];	/* elvname + "_io_cq" */
-
 };
 
 /*
@@ -144,7 +125,7 @@ extern void elv_drain_elevator(struct request_queue *);
 /*
  * io scheduler registration
  */
-extern int elv_register(struct elevator_type *);
+extern void elv_register(struct elevator_type *);
 extern void elv_unregister(struct elevator_type *);
 
 /*
@@ -211,6 +192,23 @@ enum {
 	list_del_init(&(rq)->queuelist);	\
 	INIT_LIST_HEAD(&(rq)->csd.list);	\
 	} while (0)
+
+/*
+ * io context count accounting
+ */
+#define elv_ioc_count_mod(name, __val) this_cpu_add(name, __val)
+#define elv_ioc_count_inc(name)	this_cpu_inc(name)
+#define elv_ioc_count_dec(name)	this_cpu_dec(name)
+
+#define elv_ioc_count_read(name)				\
+({								\
+	unsigned long __val = 0;				\
+	int __cpu;						\
+	smp_wmb();						\
+	for_each_possible_cpu(__cpu)				\
+		__val += per_cpu(name, __cpu);			\
+	__val;							\
+})
 
 #endif /* CONFIG_BLOCK */
 #endif

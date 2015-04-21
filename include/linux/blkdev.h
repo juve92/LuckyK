@@ -73,7 +73,7 @@ enum rq_cmd_type_bits {
 
 /*
  * try to put the fields that are referenced together in the same cacheline.
- * if you modify this structure, be sure to check block/blk-core.c:blk_rq_init()
+ * if you modify this structure, be sure to check block/blk-core.c:rq_init()
  * as well!
  */
 struct request {
@@ -110,14 +110,10 @@ struct request {
 	 * Three pointers are available for the IO schedulers, if they need
 	 * more they have to dynamically allocate it.  Flush requests are
 	 * never put on the IO scheduler. So let the flush fields share
-	 * space with the elevator data.
+	 * space with the three elevator_private pointers.
 	 */
 	union {
-		struct {
-			struct io_cq		*icq;
-			void			*priv[2];
-		} elv;
-
+		void *elevator_private[3];
 		struct {
 			unsigned int		seq;
 			struct list_head	list;
@@ -264,7 +260,8 @@ struct queue_limits {
 	unsigned char		discard_zeroes_data;
 };
 
-struct request_queue {
+struct request_queue
+{
 	/*
 	 * Together with queue_head for cacheline sharing
 	 */
@@ -307,20 +304,14 @@ struct request_queue {
 	void			*queuedata;
 
 	/*
-	 * various queue flags, see QUEUE_* below
-	 */
-	unsigned long		queue_flags;
-
-	/*
-	 * ida allocated id for this queue.  Used to index queues from
-	 * ioctx.
-	 */
-	int			id;
-
-	/*
 	 * queue needs bounce pages for pages above this limit
 	 */
 	gfp_t			bounce_gfp;
+
+	/*
+	 * various queue flags, see QUEUE_* below
+	 */
+	unsigned long		queue_flags;
 
 	/*
 	 * protects queue structures from reentrancy. ->__queue_lock should
@@ -343,8 +334,8 @@ struct request_queue {
 	unsigned int		nr_congestion_off;
 	unsigned int		nr_batching;
 
-	unsigned int		dma_drain_size;
 	void			*dma_drain_buffer;
+	unsigned int		dma_drain_size;
 	unsigned int		dma_pad_mask;
 	unsigned int		dma_alignment;
 
@@ -357,8 +348,6 @@ struct request_queue {
 	unsigned int		rq_timeout;
 	struct timer_list	timeout;
 	struct list_head	timeout_list;
-
-	struct list_head	icq_list;
 
 	struct queue_limits	limits;
 
@@ -394,9 +383,6 @@ struct request_queue {
 	/* Throttle data */
 	struct throtl_data *td;
 #endif
-#ifdef CONFIG_LOCKDEP
-	int			ioc_release_depth;
-#endif
 };
 
 #define QUEUE_FLAG_QUEUED	1	/* uses generic tag queueing */
@@ -407,7 +393,7 @@ struct request_queue {
 #define QUEUE_FLAG_ELVSWITCH	6	/* don't use elevator, just do FIFO */
 #define QUEUE_FLAG_BIDI		7	/* queue supports bidi requests */
 #define QUEUE_FLAG_NOMERGES     8	/* disable merge attempts */
-#define QUEUE_FLAG_SAME_COMP	9	/* complete on same CPU-group */
+#define QUEUE_FLAG_SAME_COMP	9	/* force complete on same CPU */
 #define QUEUE_FLAG_FAIL_IO     10	/* fake timeout */
 #define QUEUE_FLAG_STACKABLE   11	/* supports request stacking */
 #define QUEUE_FLAG_NONROT      12	/* non-rotational device (SSD) */
@@ -417,7 +403,6 @@ struct request_queue {
 #define QUEUE_FLAG_NOXMERGES   15	/* No extended merges */
 #define QUEUE_FLAG_ADD_RANDOM  16	/* Contributes to random pool */
 #define QUEUE_FLAG_SECDISCARD  17	/* supports SECDISCARD */
-#define QUEUE_FLAG_SAME_FORCE  18	/* force complete on same CPU */
 
 #define QUEUE_FLAG_DEFAULT	((1 << QUEUE_FLAG_IO_STAT) |		\
 				 (1 << QUEUE_FLAG_STACKABLE)	|	\
@@ -491,7 +476,6 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
 
 #define blk_queue_tagged(q)	test_bit(QUEUE_FLAG_QUEUED, &(q)->queue_flags)
 #define blk_queue_stopped(q)	test_bit(QUEUE_FLAG_STOPPED, &(q)->queue_flags)
-#define blk_queue_dead(q)	test_bit(QUEUE_FLAG_DEAD, &(q)->queue_flags)
 #define blk_queue_nomerges(q)	test_bit(QUEUE_FLAG_NOMERGES, &(q)->queue_flags)
 #define blk_queue_noxmerges(q)	\
 	test_bit(QUEUE_FLAG_NOXMERGES, &(q)->queue_flags)
@@ -868,26 +852,17 @@ extern int blk_rq_map_sg(struct request_queue *, struct request *, struct scatte
 extern void blk_dump_rq_flags(struct request *, char *);
 extern long nr_blockdev_pages(void);
 
-bool __must_check blk_get_queue(struct request_queue *);
+int blk_get_queue(struct request_queue *);
 struct request_queue *blk_alloc_queue(gfp_t);
 struct request_queue *blk_alloc_queue_node(gfp_t, int);
 extern void blk_put_queue(struct request_queue *);
 
-/*
- * Note: Code in between changing the blk_plug list/cb_list or element of such
- * lists is preemptable, but such code can't do sleep (or be very careful),
- * otherwise data is corrupted. For details, please check schedule() where
- * blk_schedule_flush_plug() is called.
- */
 struct blk_plug {
 	unsigned long magic;
 	struct list_head list;
 	struct list_head cb_list;
 	unsigned int should_sort;
-	unsigned int count;
 };
-#define BLK_MAX_REQUEST_COUNT 16
-
 struct blk_plug_cb {
 	struct list_head list;
 	void (*callback)(struct blk_plug_cb *);
@@ -1200,6 +1175,20 @@ static inline uint64_t rq_io_start_time_ns(struct request *req)
 	return 0;
 }
 #endif
+
+#ifdef CONFIG_BLK_DEV_THROTTLING
+extern int blk_throtl_init(struct request_queue *q);
+extern void blk_throtl_exit(struct request_queue *q);
+extern int blk_throtl_bio(struct request_queue *q, struct bio **bio);
+#else /* CONFIG_BLK_DEV_THROTTLING */
+static inline int blk_throtl_bio(struct request_queue *q, struct bio **bio)
+{
+	return 0;
+}
+
+static inline int blk_throtl_init(struct request_queue *q) { return 0; }
+static inline int blk_throtl_exit(struct request_queue *q) { return 0; }
+#endif /* CONFIG_BLK_DEV_THROTTLING */
 
 #define MODULE_ALIAS_BLOCKDEV(major,minor) \
 	MODULE_ALIAS("block-major-" __stringify(major) "-" __stringify(minor))

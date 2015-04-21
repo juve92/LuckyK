@@ -10,7 +10,6 @@
 #include <linux/bio.h>
 #include <linux/blktrace_api.h>
 #include "blk-cgroup.h"
-#include "blk.h"
 
 /* Max dispatch from a group in 1 round */
 static int throtl_grp_quantum = 8;
@@ -303,15 +302,15 @@ throtl_grp *throtl_find_tg(struct throtl_data *td, struct blkio_cgroup *blkcg)
 	return tg;
 }
 
+/*
+ * This function returns with queue lock unlocked in case of error, like
+ * request queue is no more
+ */
 static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
 {
 	struct throtl_grp *tg = NULL, *__tg = NULL;
 	struct blkio_cgroup *blkcg;
 	struct request_queue *q = td->queue;
-
-	/* no throttling for dead queue */
-	if (unlikely(blk_queue_dead(q)))
-		return NULL;
 
 	rcu_read_lock();
 	blkcg = task_blkio_cgroup(current);
@@ -324,25 +323,31 @@ static struct throtl_grp * throtl_get_tg(struct throtl_data *td)
 	/*
 	 * Need to allocate a group. Allocation of group also needs allocation
 	 * of per cpu stats which in-turn takes a mutex() and can block. Hence
-	 * we need to drop rcu lock and queue_lock before we call alloc.
+	 * we need to drop rcu lock and queue_lock before we call alloc
+	 *
+	 * Take the request queue reference to make sure queue does not
+	 * go away once we return from allocation.
 	 */
+	blk_get_queue(q);
 	rcu_read_unlock();
 	spin_unlock_irq(q->queue_lock);
 
 	tg = throtl_alloc_tg(td);
+	/*
+	 * We might have slept in group allocation. Make sure queue is not
+	 * dead
+	 */
+	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
+		blk_put_queue(q);
+		if (tg)
+			kfree(tg);
+
+		return ERR_PTR(-ENODEV);
+	}
+	blk_put_queue(q);
 
 	/* Group allocated and queue is still alive. take the lock */
 	spin_lock_irq(q->queue_lock);
-
-	/* Make sure @q is still alive */
-
-	if (unlikely(blk_queue_dead(q))) {
-
-	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
-
-		kfree(tg);
-		return NULL;
-	}
 
 	/*
 	 * Initialize the new group. After sleeping, read the blkcg again.
@@ -1118,17 +1123,17 @@ static struct blkio_policy_type blkio_policy_throtl = {
 	.plid = BLKIO_POLICY_THROTL,
 };
 
-bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+int blk_throtl_bio(struct request_queue *q, struct bio **biop)
 {
 	struct throtl_data *td = q->td;
 	struct throtl_grp *tg;
+	struct bio *bio = *biop;
 	bool rw = bio_data_dir(bio), update_disptime = true;
 	struct blkio_cgroup *blkcg;
-	bool throttled = false;
 
 	if (bio->bi_rw & REQ_THROTTLED) {
 		bio->bi_rw &= ~REQ_THROTTLED;
-		goto out;
+		return 0;
 	}
 
 	/*
@@ -1147,7 +1152,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
 			blkiocg_update_dispatch_stats(&tg->blkg, bio->bi_size,
 					rw, bio->bi_rw & REQ_SYNC);
 			rcu_read_unlock();
-			goto out;
+			return 0;
 		}
 	}
 	rcu_read_unlock();
@@ -1156,10 +1161,18 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
 	 * Either group has not been allocated yet or it is not an unlimited
 	 * IO group
 	 */
+
 	spin_lock_irq(q->queue_lock);
 	tg = throtl_get_tg(td);
-	if (unlikely(!tg))
-		goto out_unlock;
+
+	if (IS_ERR(tg)) {
+		if (PTR_ERR(tg)	== -ENODEV) {
+			/*
+			 * Queue is gone. No queue lock held here.
+			 */
+			return -ENODEV;
+		}
+	}
 
 	if (tg->nr_queued[rw]) {
 		/*
@@ -1187,7 +1200,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
 		 * So keep on trimming slice even if bio is not queued.
 		 */
 		throtl_trim_slice(td, tg, rw);
-		goto out_unlock;
+		goto out;
 	}
 
 queue_bio:
@@ -1199,17 +1212,16 @@ queue_bio:
 			tg->nr_queued[READ], tg->nr_queued[WRITE]);
 
 	throtl_add_bio_tg(q->td, tg, bio);
-	throttled = true;
+	*biop = NULL;
 
 	if (update_disptime) {
 		tg_update_disptime(td, tg);
 		throtl_schedule_next_dispatch(td);
 	}
 
-out_unlock:
-	spin_unlock_irq(q->queue_lock);
 out:
-	return throttled;
+	spin_unlock_irq(q->queue_lock);
+	return 0;
 }
 
 int blk_throtl_init(struct request_queue *q)
