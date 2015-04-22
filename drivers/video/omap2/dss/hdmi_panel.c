@@ -56,13 +56,6 @@ static ssize_t hdmi_deepcolor_store(struct device *dev,
 	return size;
 }
 
-<<<<<<< HEAD
-static ssize_t hdmi_edid_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	return omapdss_hdmi_get_edid(buf);
-}
-
 static ssize_t hdmi_s3d_mode_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -153,27 +146,10 @@ static DEVICE_ATTR(s3d_enable, S_IRUGO | S_IWUSR, hdmi_s3d_enable_show,
 							hdmi_s3d_enable_store);
 static DEVICE_ATTR(s3d_type, S_IRUGO | S_IWUSR, hdmi_s3d_mode_show,
 							hdmi_s3d_mode_store);
-static DEVICE_ATTR(edid, S_IRUGO, hdmi_edid_show, NULL);
 static DEVICE_ATTR(deepcolor, S_IRUGO | S_IWUSR, hdmi_deepcolor_show,
 							hdmi_deepcolor_store);
 
-static struct attribute *hdmi_panel_attrs[] = {
-	&dev_attr_s3d_enable.attr,
-	&dev_attr_s3d_type.attr,
-	&dev_attr_edid.attr,
-	&dev_attr_deepcolor.attr,
-	NULL,
-};
 
-static struct attribute_group hdmi_panel_attr_group = {
-	.attrs = hdmi_panel_attrs,
-};
-
-=======
-static DEVICE_ATTR(deepcolor, S_IRUGO | S_IWUSR, hdmi_deepcolor_show,
-							hdmi_deepcolor_store);
-
->>>>>>> parent of 9c6b57e... [HDMI] Expose HDMI EDID block through sysfs
 static int hdmi_panel_probe(struct omap_dss_device *dssdev)
 {
 	DSSDBG("ENTER hdmi_panel_probe\n");
