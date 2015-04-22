@@ -591,6 +591,7 @@ int omapdss_hdmi_get_deepcolor(void)
 	return hdmi.deep_color;
 }
 
+<<<<<<< HEAD
 ssize_t omapdss_hdmi_get_edid(char *edid_buffer)
 {
 	ssize_t size = hdmi.enabled ? HDMI_EDID_MAX_LENGTH : 0;
@@ -620,6 +621,8 @@ int omapdss_hdmi_get_s3d_enable(void)
 	return hdmi.s3d_enable;
 }
 
+=======
+>>>>>>> parent of 9c6b57e... [HDMI] Expose HDMI EDID block through sysfs
 int hdmi_get_current_hpd()
 {
 	return gpio_get_value(hdmi.dssdev->hpd_gpio);

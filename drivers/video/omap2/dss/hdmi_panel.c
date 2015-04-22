@@ -56,6 +56,7 @@ static ssize_t hdmi_deepcolor_store(struct device *dev,
 	return size;
 }
 
+<<<<<<< HEAD
 static ssize_t hdmi_edid_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -168,6 +169,11 @@ static struct attribute_group hdmi_panel_attr_group = {
 	.attrs = hdmi_panel_attrs,
 };
 
+=======
+static DEVICE_ATTR(deepcolor, S_IRUGO | S_IWUSR, hdmi_deepcolor_show,
+							hdmi_deepcolor_store);
+
+>>>>>>> parent of 9c6b57e... [HDMI] Expose HDMI EDID block through sysfs
 static int hdmi_panel_probe(struct omap_dss_device *dssdev)
 {
 	DSSDBG("ENTER hdmi_panel_probe\n");
@@ -185,8 +191,8 @@ static int hdmi_panel_probe(struct omap_dss_device *dssdev)
 			{640, 480, 31746, 128, 24, 29, 9, 40, 2};
 
 	/* sysfs entry to provide user space control to set deepcolor mode */
-	if (sysfs_create_group(&dssdev->dev.kobj, &hdmi_panel_attr_group))
-		DSSERR("failed to create sysfs entries\n");
+	if (device_create_file(&dssdev->dev, &dev_attr_deepcolor))
+		DSSERR("failed to create sysfs file\n");
 
 	DSSDBG("hdmi_panel_probe x_res= %d y_res = %d\n",
 		dssdev->panel.timings.x_res,
@@ -196,7 +202,7 @@ static int hdmi_panel_probe(struct omap_dss_device *dssdev)
 
 static void hdmi_panel_remove(struct omap_dss_device *dssdev)
 {
-	sysfs_remove_group(&dssdev->dev.kobj, &hdmi_panel_attr_group);
+	device_remove_file(&dssdev->dev, &dev_attr_deepcolor);
 }
 
 static int hdmi_panel_enable(struct omap_dss_device *dssdev)
