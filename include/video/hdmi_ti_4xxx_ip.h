@@ -21,8 +21,6 @@
 #ifndef _HDMI_TI_4xxx_
 #define _HDMI_TI_4xxx_
 
-#include <video/cec.h>
-
 #define HDMI_HPD_LOW		0x10
 #define HDMI_HPD_HIGH		0x20
 #define HDMI_BCAP		0x40
@@ -382,6 +380,28 @@ enum hdmi_aksv_err {
 	HDMI_AKSV_ZERO = 0,
 	HDMI_AKSV_ERROR = 1,
 	HDMI_AKSV_VALID = 2
+};
+struct cec_dev {
+	int device_id;
+	int clear_existing_device;
+	int phy_addr;
+};
+
+struct cec_tx_data {
+	char   dest_device_id;
+	char   initiator_device_id;
+	char   send_ping;
+	char   retry_count;
+	char   tx_cmd;
+	char   tx_count;
+	char   tx_operand[15];
+};
+struct cec_rx_data {
+	char   init_device_id;
+	char   dest_device_id;
+	char   rx_cmd;
+	char   rx_count;
+	char   rx_operand[15];
 };
 
 int hdmi_ti_4xxx_phy_init(struct hdmi_ip_data *ip_data, int phy);
