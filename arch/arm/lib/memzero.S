@@ -36,10 +36,6 @@ THUMB(  .p2align 2	)
  * The pointer is now aligned and the length is adjusted.  Try doing the
  * memzero again.
  */
-	.syntax unified
-
-
->>>>>>> 07e6d9c... neon optimized memset and memzero with cflags for mem-etc thanks to https://github.com/hglm/test-arm-kernel-memcpy/commits/master
 
 ENTRY(__memzero)
 	ands r3, r0, #3
