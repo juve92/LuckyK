@@ -1479,7 +1479,6 @@ static void rcu_process_callbacks(struct softirq_action *unused)
 	__rcu_process_callbacks(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
 	rcu_preempt_process_callbacks();
 
-	trace_rcu_utilization("End RCU core");
 }
 
 /*
@@ -1898,10 +1897,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
 			rdp->gpnum = rnp->completed;
 			rdp->completed = rnp->completed;
 			rdp->passed_quiesc_completed = rnp->completed - 1;
-			rdp->passed_quiesce = 0;
 			rdp->qs_pending = 0;
-			rdp->passed_quiesce_gpnum = rnp->gpnum - 1;
-			trace_rcu_grace_period(rsp->name, rdp->gpnum, "cpuonl");
 		}
 		raw_spin_unlock(&rnp->lock); /* irqs already disabled. */
 		rnp = rnp->parent;
