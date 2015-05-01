@@ -557,7 +557,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			max_load_freq = load_freq;
 
 		/* calculate the scaled load across CPU */
-		load_at_max_freq += (cur_load * policy->cur) /
+		load_at_max_freq += (policy->cur) /
 					policy->cpuinfo.max_freq;
 
 		avg_load_at_max_freq += ((load_at_max_freq +
@@ -567,9 +567,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	}
 
 	if (min_sampling_rate < DEFAULT_SAMPLING_RATE)
-		cpufreq_notify_utilization(policy, avg_load_at_max_freq);
-	else
-		cpufreq_notify_utilization(policy, load_at_max_freq);
 
 	/* Check for frequency increase */
 	if (max_load_freq > dbs_tuners_ins.up_threshold * policy->cur) {
