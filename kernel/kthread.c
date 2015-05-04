@@ -372,12 +372,16 @@ repeat:
 					struct kthread_work, node);
 		list_del_init(&work->node);
 	}
-	worker->current_work = work;
 	spin_unlock_irq(&worker->lock);
 
 	if (work) {
 		__set_current_state(TASK_RUNNING);
 		work->func(work);
+		smp_wmb();	/* wmb worker-b0 paired with flush-b1 */
+		work->done_seq = work->queue_seq;
+		smp_mb();	/* mb worker-b1 paired with flush-b0 */
+		if (atomic_read(&work->flushing))
+			wake_up_all(&work->done);
 	} else if (!freezing(current))
 		schedule();
 
@@ -422,35 +426,25 @@ EXPORT_SYMBOL_GPL(queue_kthread_work);
  */
 void flush_kthread_work(struct kthread_work *work)
 {
-	struct kthread_flush_work fwork = {
-		KTHREAD_WORK_INIT(fwork.work, kthread_flush_work_fn),
-		COMPLETION_INITIALIZER_ONSTACK(fwork.done),
-	};
-	struct kthread_worker *worker;
-	bool noop = false;
+	int seq = work->queue_seq;
 
-retry:
-	worker = work->worker;
-	if (!worker)
-		return;
+	atomic_inc(&work->flushing);
 
-	spin_lock_irq(&worker->lock);
-	if (work->worker != worker) {
-		spin_unlock_irq(&worker->lock);
-		goto retry;
-	}
+	/*
+	 * mb flush-b0 paired with worker-b1, to make sure either
+	 * worker sees the above increment or we see done_seq update.
+	 */
+	smp_mb__after_atomic_inc();
 
-	if (!list_empty(&work->node))
-		insert_kthread_work(worker, &fwork.work, work->node.next);
-	else if (worker->current_work == work)
-		insert_kthread_work(worker, &fwork.work, worker->work_list.next);
-	else
-		noop = true;
+	/* A - B <= 0 tests whether B is in front of A regardless of overflow */
+	wait_event(work->done, seq - work->done_seq <= 0);
+	atomic_dec(&work->flushing);
 
-	spin_unlock_irq(&worker->lock);
-
-	if (!noop)
-		wait_for_completion(&fwork.done);
+	/*
+	 * rmb flush-b1 paired with worker-b0, to make sure our caller
+	 * sees every change made by work->func().
+	 */
+	smp_mb__after_atomic_dec();
 }
 EXPORT_SYMBOL_GPL(flush_kthread_work);
 
