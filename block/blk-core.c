@@ -1385,9 +1385,6 @@ static int __make_request(struct request_queue *q, struct bio *bio)
 	 * Check if we can merge with the plugged list before grabbing
 	 * any locks.
 	 */
-	if (attempt_plug_merge(q, bio, &request_count))
-		goto out;
-
 	spin_lock_irq(q->queue_lock);
 
 	el_ret = elv_merge(q, &req, bio);
