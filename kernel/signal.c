@@ -1901,9 +1901,6 @@ static int do_signal_stop(int signr)
 
 		sig->group_stop_count = 0;
 
-		if (task_set_jobctl_pending(current, signr | gstop))
-			sig->group_stop_count++;
-
 		current->group_stop &= ~GROUP_STOP_SIGMASK;
 		current->group_stop |= signr | gstop;
 		sig->group_stop_count = 1;
