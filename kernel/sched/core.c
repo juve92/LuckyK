@@ -77,9 +77,9 @@
 #include <asm/irq_regs.h>
 #include <asm/mutex.h>
 
-#include "cpupri.h"
+#include "sched_cpupri.h"
 #include "../workqueue_sched.h"
-#include "auto_group.h"
+#include "sched_autogroup.h"
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
@@ -692,7 +692,7 @@ int runqueue_is_locked(int cpu)
 	__SCHED_FEAT_##name ,
 
 enum {
-#include "features.h"
+#include "sched_features.h"
 };
 
 #undef SCHED_FEAT
@@ -1779,7 +1779,7 @@ static const struct sched_class rt_sched_class;
 #define for_each_class(class) \
    for (class = sched_class_highest; class; class = class->next)
 
-#include "stats.h"
+#include "sched_stats.h"
 
 static void inc_nr_running(struct rq *rq)
 {
@@ -2028,11 +2028,11 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
 
 #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
 
-#include "idle_task.c"
-#include "fair.c"
-#include "rt.c"
-#include "auto_group.c"
-#include "stop_task.c"
+#include "sched_idletask.c"
+#include "sched_fair.c"
+#include "sched_rt.c"
+#include "sched_autogroup.c"
+#include "sched_stoptask.c"
 #ifdef CONFIG_SCHED_DEBUG
 # include "sched_debug.c"
 #endif
