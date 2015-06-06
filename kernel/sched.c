@@ -1,5 +1,5 @@
 /*
- *  kernel/sched/core.c
+ *  kernel/sched.c
  *
  *  Kernel scheduler and related syscalls
  *
@@ -78,7 +78,7 @@
 #include <asm/mutex.h>
 
 #include "sched_cpupri.h"
-#include "../workqueue_sched.h"
+#include "workqueue_sched.h"
 #include "sched_autogroup.h"
 
 #define CREATE_TRACE_POINTS
@@ -701,7 +701,7 @@ enum {
 	(1UL << __SCHED_FEAT_##name) * enabled |
 
 const_debug unsigned int sysctl_sched_features =
-#include "features.h"
+#include "sched_features.h"
 	0;
 
 #undef SCHED_FEAT
@@ -711,7 +711,7 @@ const_debug unsigned int sysctl_sched_features =
 	#name ,
 
 static __read_mostly char *sched_feat_names[] = {
-#include "features.h"
+#include "sched_features.h"
 	NULL
 };
 
