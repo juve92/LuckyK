@@ -1064,11 +1064,3 @@ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
 extern void unthrottle_offline_cfs_rqs(struct rq *rq);
 
 extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
-
-#ifdef CONFIG_NO_HZ
-enum rq_nohz_flag_bits {
-	NOHZ_IDLE,
-};
-
-#define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
-#endif
