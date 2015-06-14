@@ -306,7 +306,7 @@ static void row_add_request(struct request_queue *q,
 		row_log_rowq(rd, rqueue->prio,
 			"added urgent request (total on queue=%d)",
 			rqueue->nr_req);
-		rq->cmd_flags |= REQ_URGENT;
+		rq->cmd_flags;
 	} else
 		row_log_rowq(rd, rqueue->prio,
 			"added request (total on queue=%d)", rqueue->nr_req);
@@ -349,7 +349,7 @@ static void row_completed_req(struct request_queue *q, struct request *rq)
 {
 	struct row_data *rd = q->elevator->elevator_data;
 
-	 if (rq->cmd_flags & REQ_URGENT) {
+	 if (rq->cmd_flags) {
 		if (!rd->nr_urgent_in_flight) {
 			pr_err("ROW BUG: %s() nr_urgent_in_flight = 0",
 				__func__);
@@ -430,7 +430,7 @@ static void row_dispatch_insert(struct row_data *rd, int queue_idx)
 	row_clear_rowq_unserved(rd, queue_idx);
 	row_log_rowq(rd, queue_idx, " Dispatched request nr_disp = %d",
 		     rd->row_queues[queue_idx].nr_dispatched);
-	if (rq->cmd_flags & REQ_URGENT)
+	if (rq->cmd_flags)
 		rd->nr_urgent_in_flight++;
 }
 
@@ -741,7 +741,7 @@ static enum row_queue_prio row_get_queue_prio(struct request *rq)
 				rq->rq_disk->disk_name, __func__);
 			q_type = ROWQ_PRIO_REG_WRITE;
 		}
-		rq->cmd_flags |= REQ_URGENT;
+		rq->cmd_flags;
 		break;
 	case IOPRIO_CLASS_IDLE:
 		if (data_dir == READ)
