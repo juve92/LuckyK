@@ -1390,7 +1390,9 @@ static void __init tuna_map_io(void)
 
 static void __init tuna_reserve(void)
 {
-    unsigned long real_start, real_size;
+        int i;
+        int ret;
+        unsigned long real_start, real_size;
 	omap_init_ram_size();
 
 #ifdef CONFIG_ION_OMAP
@@ -1407,23 +1409,9 @@ static void __init tuna_reserve(void)
 	/* do the static reservations first */
 	memblock_remove(PHYS_ADDR_SMC_MEM, PHYS_ADDR_SMC_SIZE);
 	memblock_remove(PHYS_ADDR_DUCATI_MEM, PHYS_ADDR_DUCATI_SIZE);
-
-	for (i = 0; i < tuna_ion_data.nr; i++)
-		if (tuna_ion_data.heaps[i].type == ION_HEAP_TYPE_CARVEOUT ||
-		    tuna_ion_data.heaps[i].type == OMAP_ION_HEAP_TYPE_TILER) {
-            
-            // Register an extra 1M before ramconsole to store kexec stuff
-            real_start = tuna_ion_data.heaps[i].base - SZ_1M;
-            real_size = tuna_ion_data.heaps[i].size + SZ_1M;
             
             ret = memblock_remove(real_start, real_size);
-            
-			if (ret)
-				pr_err("memblock remove of %x@%lx failed\n",
-				       tuna_ion_data.heaps[i].size,
-				       tuna_ion_data.heaps[i].base);
-		}
-
+           
 	/* ipu needs to recognize secure input buffer area as well */
 	omap_ipu_set_static_mempool(PHYS_ADDR_DUCATI_MEM,
 				  PHYS_ADDR_DUCATI_SIZE + OMAP4_ION_HEAP_SECURE_INPUT_SIZE);
