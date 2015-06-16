@@ -569,7 +569,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 #endif
 
         this_dbs_info->freq_lo = 0;
-        policy = this_dbs_info->cur_policy;
 
 	struct cpufreq_policy *policy;
 	unsigned int j;
