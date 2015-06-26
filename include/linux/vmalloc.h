@@ -142,7 +142,8 @@ extern long vwrite(char *buf, char *addr, unsigned long count);
 /*
  *	Internals.  Dont't use..
  */
-extern struct list_head vmap_area_list;
+extern rwlock_t vmlist_lock;
+extern struct vm_struct *vmlist;
 extern __init void vm_area_register_early(struct vm_struct *vm, size_t align);
 
 #ifdef CONFIG_SMP

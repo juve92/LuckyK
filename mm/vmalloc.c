@@ -250,8 +250,7 @@ EXPORT_SYMBOL(vmalloc_to_pfn);
 #define VM_VM_AREA	0x04
 
 static DEFINE_SPINLOCK(vmap_area_lock);
-/* Export for kexec only */
-LIST_HEAD(vmap_area_list);
+static LIST_HEAD(vmap_area_list);
 static struct rb_root vmap_area_root = RB_ROOT;
 
 /* The vmap cache globals are protected by vmap_area_lock */
@@ -261,10 +260,6 @@ static unsigned long cached_vstart;
 static unsigned long cached_align;
 
 static unsigned long vmap_area_pcpu_hole;
-
-/*** Old vmalloc interfaces ***/
-static DEFINE_RWLOCK(vmlist_lock);
-static struct vm_struct *vmlist;
 
 static struct vmap_area *__find_vmap_area(unsigned long addr)
 {
@@ -1257,6 +1252,10 @@ int map_vm_area(struct vm_struct *area, pgprot_t prot, struct page ***pages)
 	return err;
 }
 EXPORT_SYMBOL_GPL(map_vm_area);
+
+/*** Old vmalloc interfaces ***/
+DEFINE_RWLOCK(vmlist_lock);
+struct vm_struct *vmlist;
 
 static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
 			      unsigned long flags, void *caller)

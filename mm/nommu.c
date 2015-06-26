@@ -212,7 +212,8 @@ int follow_pfn(struct vm_area_struct *vma, unsigned long address,
 }
 EXPORT_SYMBOL(follow_pfn);
 
-LIST_HEAD(vmap_area_list);
+DEFINE_RWLOCK(vmlist_lock);
+struct vm_struct *vmlist;
 
 void vfree(const void *addr)
 {
