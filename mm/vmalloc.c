@@ -262,6 +262,10 @@ static unsigned long cached_align;
 
 static unsigned long vmap_area_pcpu_hole;
 
+/*** Old vmalloc interfaces ***/
+static DEFINE_RWLOCK(vmlist_lock);
+static struct vm_struct *vmlist;
+
 static struct vmap_area *__find_vmap_area(unsigned long addr)
 {
 	struct rb_node *n = vmap_area_root.rb_node;
@@ -303,7 +307,7 @@ static void __insert_vmap_area(struct vmap_area *va)
 	rb_link_node(&va->rb_node, parent, p);
 	rb_insert_color(&va->rb_node, &vmap_area_root);
 
-	/* address-sort this list */
+	/* address-sort this list so it is usable like the vmlist */
 	tmp = rb_prev(&va->rb_node);
 	if (tmp) {
 		struct vmap_area *prev;
@@ -1121,7 +1125,6 @@ void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t pro
 }
 EXPORT_SYMBOL(vm_map_ram);
 
-static struct vm_struct *vmlist __initdata;
 /**
  * vm_area_register_early - register vmap area early during boot
  * @vm: vm_struct to register
@@ -1268,8 +1271,10 @@ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
 	spin_unlock(&vmap_area_lock);
 }
 
-static void clear_vm_unlist(struct vm_struct *vm)
+static void insert_vmalloc_vmlist(struct vm_struct *vm)
 {
+	struct vm_struct *tmp, **p;
+
 	/*
 	 * Before removing VM_UNLIST,
 	 * we should make sure that vm has proper values.
@@ -1277,13 +1282,22 @@ static void clear_vm_unlist(struct vm_struct *vm)
 	 */
 	smp_wmb();
 	vm->flags &= ~VM_UNLIST;
+
+	write_lock(&vmlist_lock);
+	for (p = &vmlist; (tmp = *p) != NULL; p = &tmp->next) {
+		if (tmp->addr >= vm->addr)
+			break;
+	}
+	vm->next = *p;
+	*p = vm;
+	write_unlock(&vmlist_lock);
 }
 
 static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
 			      unsigned long flags, void *caller)
 {
 	setup_vmalloc_vm(vm, va, flags, caller);
-	clear_vm_unlist(vm);
+	insert_vmalloc_vmlist(vm);
 }
 
 static struct vm_struct *__get_vm_area_node(unsigned long size,
@@ -1326,9 +1340,10 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
 
 	/*
 	 * When this function is called from __vmalloc_node_range,
-	 * we add VM_UNLIST flag to avoid accessing uninitialized
-	 * members of vm_struct such as pages and nr_pages fields.
-	 * They will be set later.
+	 * we do not add vm_struct to vmlist here to avoid
+	 * accessing uninitialized members of vm_struct such as
+	 * pages and nr_pages fields. They will be set later.
+	 * To distinguish it from others, we use a VM_UNLIST flag.
 	 */
 	if (flags & VM_UNLIST)
 		setup_vmalloc_vm(area, va, flags, caller);
@@ -1407,6 +1422,20 @@ struct vm_struct *remove_vm_area(const void *addr)
 		va->vm = NULL;
 		va->flags &= ~VM_VM_AREA;
 		spin_unlock(&vmap_area_lock);
+
+		if (!(vm->flags & VM_UNLIST)) {
+			struct vm_struct *tmp, **p;
+			/*
+			 * remove from list and disallow access to
+			 * this vm_struct before unmap. (address range
+			 * confliction is maintained by vmap.)
+			 */
+			write_lock(&vmlist_lock);
+			for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)
+				;
+			*p = tmp->next;
+			write_unlock(&vmlist_lock);
+		}
 
 		vmap_debug_free_range(va->va_start, va->va_end);
 		free_unmap_vmap_area(va);
@@ -1628,11 +1657,10 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
 		return NULL;
 
 	/*
-	 * In this function, newly allocated vm_struct has VM_UNLIST flag.
-	 * It means that vm_struct is not fully initialized.
-	 * Now, it is fully initialized, so remove this flag here.
+	 * In this function, newly allocated vm_struct is not added
+	 * to vmlist at __get_vm_area_node(). so, it is added here.
 	 */
-	clear_vm_unlist(area);
+	insert_vmalloc_vmlist(area);
 
 	/*
 	 * A ref_count = 3 is needed because the vm_struct and vmap_area
@@ -2527,7 +2555,7 @@ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
 		if (!counters)
 			return;
 
-		/* Pair with smp_wmb() in clear_vm_unlist() */
+		/* Pair with smp_wmb() in insert_vmalloc_vmlist() */
 		smp_rmb();
 		if (v->flags & VM_UNLIST)
 			return;
