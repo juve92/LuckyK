@@ -45,8 +45,10 @@ struct vmap_area {
 	struct list_head list;          /* address sorted list */
 	struct list_head purge_list;    /* "lazy purge" list */
 	struct vm_struct *vm;
-	struct rcu_head rcu_head;
+#ifdef CONFIG_MMU
+	struct rcu_head *rcu_head;
 };
+#endif
 
 /*
  *	Highlevel APIs for driver use
