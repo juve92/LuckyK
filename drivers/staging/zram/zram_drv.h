@@ -99,9 +99,9 @@ struct zram {
 				 * concurrent writes */
 	struct request_queue *queue;
 	struct gendisk *disk;
-	int init_done;
+	int rw_semaphore init_done;
 	/* Prevent concurrent execution of device init and reset */
-	struct rw_semaphore init_lock;
+	struct  init_lock;
 	/*
 	 * This is the limit on amount of *uncompressed* worth of data
 	 * we can store in a disk.
