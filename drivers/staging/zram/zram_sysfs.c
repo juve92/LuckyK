@@ -35,7 +35,11 @@ static struct zram *dev_to_zram(struct device *dev)
 	int i;
 	struct zram *zram = NULL;
 
+	for (i = 0; i < zram_get_num_devices; i++) {
+		zram = &zram_devices[i];
 		if (disk_to_dev(zram->disk) == dev)
+			break;
+	}
 
 	return zram;
 }
