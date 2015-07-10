@@ -39,7 +39,7 @@
 #ifdef CONFIG_FRONTSWAP
 #include <linux/frontswap.h>
 #endif
-#define ZCACHE_COMPRESSOR_DEFAULT "lz4"
+#define ZCACHE_COMPRESSOR_DEFAULT "lzo"
 #if 0
 /* this is more aggressive but may cause other problems? */
 #define ZCACHE_GFP_MASK (GFP_ATOMIC | __GFP_NORETRY | __GFP_NOWARN)
