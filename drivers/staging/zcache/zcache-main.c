@@ -1549,29 +1549,22 @@ static void zcache_cleancache_put_page(int pool_id,
 struct cleancache_filekey key,
 pgoff_t index, struct page *page)
 {
-	u32 ind = (u32) index;
-	struct tmem_oid oid = *(struct tmem_oid *)&key;
-
-	if (!PageWasActive(page))
-		return;
-	if (likely(ind == index))
-		(void)zcache_put_page(LOCAL_CLIENT, pool_id, &oid, index, page);
+u32 ind = (u32) index;
+struct tmem_oid oid = *(struct tmem_oid *)&key;
+if (likely(ind == index))
+(void)zcache_put_page(LOCAL_CLIENT, pool_id, &oid, index, page);
 }
 static int zcache_cleancache_get_page(int pool_id,
-					struct cleancache_filekey key,
-					pgoff_t index, struct page *page)
+struct cleancache_filekey key,
+pgoff_t index, struct page *page)
 {
-	u32 ind = (u32) index;
-	struct tmem_oid oid = *(struct tmem_oid *)&key;
-	int ret = -1;
-
-	if (likely(ind == index))
-		ret = zcache_get_page(LOCAL_CLIENT, pool_id, &oid, index, page);
-	if (ret == 0)
-		SetPageWasActive(page);
-	return ret;
+u32 ind = (u32) index;
+struct tmem_oid oid = *(struct tmem_oid *)&key;
+int ret = -1;
+if (likely(ind == index))
+ret = zcache_get_page(LOCAL_CLIENT, pool_id, &oid, index, page);
+return ret;
 }
-
 static void zcache_cleancache_flush_page(int pool_id,
 struct cleancache_filekey key,
 pgoff_t index)
