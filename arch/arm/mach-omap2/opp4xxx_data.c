@@ -241,7 +241,6 @@ static struct omap_opp_def __initdata omap443x_opp_def_list[] = {
 	OPP_INITIALIZER("dss_dispc", "virt_lcd_pclk", "core", true, 170000000, OMAP4430_VDD_CORE_OPP100_UV),
 };
 
-#define OMAP4460_VDD_MPU_OPP25_UV	830000
 #define OMAP4460_VDD_MPU_OPP50_UV	850000
 #define OMAP4460_VDD_MPU_OPP75_UV	910000
 #define OMAP4460_VDD_MPU_OPP100_UV	1000000
@@ -255,7 +254,6 @@ static struct omap_opp_def __initdata omap443x_opp_def_list[] = {
 
 struct omap_volt_data omap446x_vdd_mpu_volt_data[] = {
 #ifdef CONFIG_OMAP_SMARTREFLEX_CUSTOM_SENSOR
-        VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP25_UV, 5000, OMAP44XX_CONTROL_FUSE_MPU_OPP50, 0, 0, 0xf4, 0x0c, OMAP_ABB_NOMINAL_OPP),
         VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP50_UV, 10000, OMAP44XX_CONTROL_FUSE_MPU_OPP50, 0, 0, 0xf4, 0x0c, OMAP_ABB_NOMINAL_OPP),
         VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP75_UV, 50000, OMAP44XX_CONTROL_FUSE_MPU_OPP50, 0, 0, 0xf4, 0x0c, OMAP_ABB_NOMINAL_OPP),
         VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP100_UV, 0, OMAP44XX_CONTROL_FUSE_MPU_OPP100, 0, 0, 0xf9, 0x16, OMAP_ABB_NOMINAL_OPP),
@@ -268,7 +266,6 @@ struct omap_volt_data omap446x_vdd_mpu_volt_data[] = {
         VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPPFIRE_UV, 0, 0, 2920, 2666, 0xfa, 0x27, OMAP_ABB_FAST_OPP),
         VOLT_DATA_DEFINE(0, 0, 0, 0, 0, 0, 0, 0),
 #else
-        VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP25_UV, 5000, OMAP44XX_CONTROL_FUSE_MPU_OPP50, 0xf4, 0x0c, OMAP_ABB_NOMINAL_OPP),
 	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP50_UV, 10000, OMAP44XX_CONTROL_FUSE_MPU_OPP50, 0xf4, 0x0c, OMAP_ABB_NOMINAL_OPP),
         VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP75_UV, 50000, OMAP44XX_CONTROL_FUSE_MPU_OPP50, 0xf4, 0x0c, OMAP_ABB_NOMINAL_OPP),
 	VOLT_DATA_DEFINE(OMAP4460_VDD_MPU_OPP100_UV, 0, OMAP44XX_CONTROL_FUSE_MPU_OPP100, 0xf9, 0x16, OMAP_ABB_NOMINAL_OPP),
@@ -307,10 +304,10 @@ struct omap_volt_data omap446x_vdd_iva_volt_data[] = {
 #endif
 };
 
-#define OMAP4460_VDD_CORE_OPP50_UV	 946000
-#define OMAP4460_VDD_CORE_OPP75_UV	1055000
-#define OMAP4460_VDD_CORE_OPP100_UV	1107000
-#define OMAP4460_VDD_CORE_OPP100_OV_UV	1134000
+#define OMAP4460_VDD_CORE_OPP50_UV	 996000
+#define OMAP4460_VDD_CORE_OPP75_UV	1095000
+#define OMAP4460_VDD_CORE_OPP100_UV	1167000
+#define OMAP4460_VDD_CORE_OPP100_OV_UV	1214000
 
 struct omap_volt_data omap446x_vdd_core_volt_data[] = {
 #ifdef CONFIG_OMAP_SMARTREFLEX_CUSTOM_SENSOR
@@ -330,7 +327,6 @@ struct omap_volt_data omap446x_vdd_core_volt_data[] = {
 
 /* OMAP 4460 MPU Core VDD dependency table */
 static struct omap_vdd_dep_volt omap446x_vdd_mpu_core_dep_data[] = {
-        {.main_vdd_volt = OMAP4460_VDD_MPU_OPP25_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
 	{.main_vdd_volt = OMAP4460_VDD_MPU_OPP50_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
         {.main_vdd_volt = OMAP4460_VDD_MPU_OPP75_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
         {.main_vdd_volt = OMAP4460_VDD_MPU_OPP100_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP75_UV},
@@ -379,7 +375,6 @@ static struct omap4_ldo_abb_trim_data __initdata omap446x_ldo_abb_trim_data[] = 
 };
 
 static struct omap_opp_def __initdata omap446x_opp_def_list[] = {
-        OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 224000000, OMAP4460_VDD_MPU_OPP25_UV),
 	/* MPU OPP1 - OPP50 */
 	OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 384000000, OMAP4460_VDD_MPU_OPP50_UV),
         OPP_INITIALIZER("mpu", "virt_dpll_mpu_ck", "mpu", true, 537600000, OMAP4460_VDD_MPU_OPP75_UV),
