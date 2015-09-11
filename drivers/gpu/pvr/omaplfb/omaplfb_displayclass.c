@@ -1043,6 +1043,212 @@ static IMG_BOOL ProcessFlip(IMG_HANDLE  hCmdCookie,
 	}
 }
 
+#if defined(CONFIG_DSSCOMP)
+
+static OMAPLFB_ERROR OMAPLFBInitIonOmap(OMAPLFB_DEVINFO *psDevInfo,
+                                        struct fb_info *psLINFBInfo,
+                                        OMAPLFB_FBINFO *psPVRFBInfo)
+{
+	int n;
+	int iMaxSwapChainBuffs;
+	int res;
+	int i, x, y, w;
+	ion_phys_addr_t phys;
+	size_t size;
+	struct tiler_view_t view;
+
+	struct omap_ion_tiler_alloc_data sAllocData = {
+		.w = ALIGN(psLINFBInfo->var.xres, PAGE_SIZE / (psLINFBInfo->var.bits_per_pixel / 8)),
+		.h = psLINFBInfo->var.yres,
+		.fmt = psLINFBInfo->var.bits_per_pixel == 16 ? TILER_PIXEL_FMT_16BIT : TILER_PIXEL_FMT_32BIT,
+		.flags = 0,
+		.token = 0,
+		.out_align = PAGE_SIZE
+	};
+	unsigned uiFBDevID = psDevInfo->uiFBDevID;
+	struct sgx_omaplfb_config *psFBPlatConfig = GetFBPlatConfig(uiFBDevID);
+
+#if defined(CONFIG_ION_OMAP)
+        gpsIONClient = ion_client_create(omap_ion_device, "omaplfb");
+        if (IS_ERR_OR_NULL(gpsIONClient))
+        {
+		printk(KERN_ERR DRIVER_PREFIX
+			" %s: Could not create ion client\n", __FUNCTION__);
+                return OMAPLFB_ERROR_INIT_FAILURE;
+        }
+#endif /* defined(CONFIG_ION_OMAP) */
+
+	if (!psFBPlatConfig->swap_chain_length)
+	{
+		/* Set a default swap chain length if it's not present in the platform data */
+		iMaxSwapChainBuffs = 2;
+		printk(KERN_WARNING DRIVER_PREFIX ": %s: Device %u: Swap chain length missing in "
+			"platform data, defaulting to %d\n", __FUNCTION__, psDevInfo->uiFBDevID,
+			iMaxSwapChainBuffs);
+	}
+	else
+	{
+		iMaxSwapChainBuffs = psFBPlatConfig->swap_chain_length;
+	}
+
+	if (psFBPlatConfig->tiler2d_buffers < iMaxSwapChainBuffs)
+	{
+		printk(KERN_WARNING DRIVER_PREFIX ": %s: Device %u: Trying to use %d tiler "
+			"buffers which is less than the swap chain length of %d, maximum "
+			"swap chain length will be set to %d\n", __FUNCTION__, psDevInfo->uiFBDevID,
+			psFBPlatConfig->tiler2d_buffers, iMaxSwapChainBuffs, psFBPlatConfig->tiler2d_buffers);
+		iMaxSwapChainBuffs = psFBPlatConfig->tiler2d_buffers;
+	}
+
+	psDevInfo->sDisplayInfo.ui32MaxSwapChainBuffers = iMaxSwapChainBuffs;
+	n = psFBPlatConfig->tiler2d_buffers;
+
+	printk(KERN_DEBUG DRIVER_PREFIX
+		": %s: Device %u: Requesting %d TILER 2D framebuffers\n", __FUNCTION__, uiFBDevID, n);
+	sAllocData.w *= n;
+
+	psPVRFBInfo->uiBytesPerPixel = psLINFBInfo->var.bits_per_pixel >> 3;
+	psPVRFBInfo->bIs2D = OMAPLFB_TRUE;
+	res = omap_ion_nonsecure_tiler_alloc(gpsIONClient, &sAllocData);
+	if (res < 0)
+	{
+		printk(KERN_ERR DRIVER_PREFIX
+			" %s: Device %u: Could not allocate 2D framebuffer(%d)\n", __FUNCTION__, uiFBDevID, res);
+		return OMAPLFB_ERROR_INIT_FAILURE;
+	}
+
+	ion_phys(gpsIONClient, sAllocData.handle, &phys, &size);
+	psPVRFBInfo->sSysAddr.uiAddr = phys;
+	psPVRFBInfo->sCPUVAddr = 0;
+
+	psPVRFBInfo->ulWidth = psLINFBInfo->var.xres;
+	psPVRFBInfo->ulHeight = psLINFBInfo->var.yres;
+	psPVRFBInfo->ulByteStride = PAGE_ALIGN(psPVRFBInfo->ulWidth * psPVRFBInfo->uiBytesPerPixel);
+	psPVRFBInfo->ulBufferSize = psPVRFBInfo->ulHeight * psPVRFBInfo->ulByteStride;
+	psPVRFBInfo->ulRoundedBufferSize = psPVRFBInfo->ulBufferSize;
+	w = psPVRFBInfo->ulByteStride >> PAGE_SHIFT;
+
+	/* this is an "effective" FB size to get correct number of buffers */
+	psPVRFBInfo->ulFBSize = sAllocData.h * n * psPVRFBInfo->ulByteStride;
+	psPVRFBInfo->psPageList = kzalloc(w * n * psPVRFBInfo->ulHeight * sizeof(*psPVRFBInfo->psPageList), GFP_KERNEL);
+	if (!psPVRFBInfo->psPageList)
+	{
+		printk(KERN_WARNING DRIVER_PREFIX ": %s: Device %u: Could not allocate page list\n", __FUNCTION__, psDevInfo->uiFBDevID);
+		ion_free(gpsIONClient, sAllocData.handle);
+		return OMAPLFB_ERROR_INIT_FAILURE;
+	}
+	psPVRFBInfo->psIONHandle = sAllocData.handle;
+
+	tilview_create(&view, phys, psDevInfo->sFBInfo.ulWidth, psDevInfo->sFBInfo.ulHeight);
+	for(i=0; i<n; i++)
+	{
+		for(y=0; y<psDevInfo->sFBInfo.ulHeight; y++)
+		{
+			for(x=0; x<w; x++)
+			{
+				psPVRFBInfo->psPageList[i * psDevInfo->sFBInfo.ulHeight * w + y * w + x].uiAddr =
+					phys + view.v_inc * y + ((x + i * w) << PAGE_SHIFT);
+			}
+		}
+	}
+	return OMAPLFB_OK;
+}
+#endif
+
+static OMAPLFB_ERROR OMAPLFBInitFBVRAM(OMAPLFB_DEVINFO *psDevInfo,
+                                        struct fb_info *psLINFBInfo,
+                                        OMAPLFB_FBINFO *psPVRFBInfo)
+{
+	struct sgx_omaplfb_config *psFBPlatConfig = GetFBPlatConfig(psDevInfo->uiFBDevID);
+	unsigned long FBSize = psLINFBInfo->fix.smem_len;
+	unsigned long ulLCM;
+	int iMaxSwapChainBuffs;
+	IMG_UINT32 ui32FBAvailableBuffs;
+
+	/* Check if there is VRAM reserved for this FB */
+	if (FBSize == 0 || psLINFBInfo->fix.line_length == 0)
+	{
+		return OMAPLFB_ERROR_INVALID_DEVICE;
+	}
+
+	/* Fail to init this DC device if vram buffers are not set */
+	if (!psFBPlatConfig->vram_buffers)
+	{
+		return OMAPLFB_ERROR_INVALID_PARAMS;
+	}
+
+	if (!psFBPlatConfig->swap_chain_length)
+	{
+		/* Set a default swap chain length if it's not present in the platform data */
+		iMaxSwapChainBuffs = 2;
+		printk(KERN_WARNING DRIVER_PREFIX ": %s: Device %u: Swap chain length missing in "
+			"platform data, defaulting to %d\n", __FUNCTION__, psDevInfo->uiFBDevID,
+			iMaxSwapChainBuffs);
+	}
+	else
+	{
+		iMaxSwapChainBuffs = psFBPlatConfig->swap_chain_length;
+	}
+
+	if (psFBPlatConfig->vram_buffers < iMaxSwapChainBuffs)
+	{
+		printk(KERN_WARNING DRIVER_PREFIX ": %s: Device %u: Trying to use %d vram "
+			"buffers which is less than the swap chain length of %d, maximum "
+			"swap chain length will be set to %d\n", __FUNCTION__, psDevInfo->uiFBDevID,
+			psFBPlatConfig->vram_buffers, iMaxSwapChainBuffs, psFBPlatConfig->vram_buffers);
+		iMaxSwapChainBuffs = psFBPlatConfig->vram_buffers;
+	}
+
+	ulLCM = LCM(psLINFBInfo->fix.line_length, OMAPLFB_PAGE_SIZE);
+	psPVRFBInfo->sSysAddr.uiAddr = psLINFBInfo->fix.smem_start;
+	psPVRFBInfo->sCPUVAddr = psLINFBInfo->screen_base;
+	psPVRFBInfo->ulWidth = psLINFBInfo->var.xres;
+	psPVRFBInfo->ulHeight = psLINFBInfo->var.yres;
+	psPVRFBInfo->ulByteStride =  psLINFBInfo->fix.line_length;
+	psPVRFBInfo->ulFBSize = FBSize;
+	psPVRFBInfo->bIs2D = OMAPLFB_FALSE;
+	psPVRFBInfo->psPageList = IMG_NULL;
+	psPVRFBInfo->ulBufferSize = psPVRFBInfo->ulHeight * psPVRFBInfo->ulByteStride;
+	psPVRFBInfo->ulRoundedBufferSize = RoundUpToMultiple(psPVRFBInfo->ulBufferSize, ulLCM);
+	ui32FBAvailableBuffs = (IMG_UINT32)(psDevInfo->sFBInfo.ulFBSize / psDevInfo->sFBInfo.ulRoundedBufferSize);
+
+	if (!ui32FBAvailableBuffs)
+	{
+		printk(KERN_ERR DRIVER_PREFIX " %s: Device %u: Not enough vram to init swap "
+			"chain buffers\n", __FUNCTION__, psDevInfo->uiFBDevID);
+		return OMAPLFB_ERROR_INIT_FAILURE;
+	}
+	else if (ui32FBAvailableBuffs < psFBPlatConfig->vram_buffers)
+	{
+		printk(KERN_WARNING DRIVER_PREFIX ": %s: Device %u: Not enough vram to hold "
+			"%d buffers (available %d), swap chain length will be set to %d\n",
+			__FUNCTION__, psDevInfo->uiFBDevID, iMaxSwapChainBuffs, ui32FBAvailableBuffs,
+			ui32FBAvailableBuffs);
+		iMaxSwapChainBuffs = ui32FBAvailableBuffs;
+	}
+	else
+	{
+		iMaxSwapChainBuffs = psFBPlatConfig->vram_buffers;
+	}
+
+	psDevInfo->sDisplayInfo.ui32MaxSwapChainBuffers = iMaxSwapChainBuffs;
+
+	printk(KERN_DEBUG DRIVER_PREFIX ": %s: Device %u: Using %d VRAM framebuffers\n", __FUNCTION__,
+		psDevInfo->uiFBDevID, iMaxSwapChainBuffs);
+
+	DEBUG_PRINTK((KERN_INFO DRIVER_PREFIX
+			": Device %u: Framebuffer virtual width: %u\n",
+			psDevInfo->uiFBDevID, psLINFBInfo->var.xres_virtual));
+	DEBUG_PRINTK((KERN_INFO DRIVER_PREFIX
+			": Device %u: Framebuffer virtual height: %u\n",
+			psDevInfo->uiFBDevID, psLINFBInfo->var.yres_virtual));
+	DEBUG_PRINTK((KERN_INFO DRIVER_PREFIX
+			": Device %u: LCM of stride and page size: %lu\n",
+			psDevInfo->uiFBDevID, ulLCM));
+
+	return OMAPLFB_OK;
+}
+
 static OMAPLFB_ERROR OMAPLFBInitFBDev(OMAPLFB_DEVINFO *psDevInfo)
 {
 	struct fb_info *psLINFBInfo;
