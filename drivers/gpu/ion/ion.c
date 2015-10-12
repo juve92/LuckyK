@@ -395,7 +395,7 @@ static bool ion_handle_validate_frm_dev(struct ion_device *dev,
 	struct ion_client *client;
 	struct rb_node *n;
 
-	p = &dev->user_clients.rb_node;
+	p = &dev->clients.rb_node;
 	while (*p) {
 		parent = *p;
 		client = rb_entry(parent, struct ion_client, node);
@@ -582,7 +582,6 @@ static void ion_buffer_kmap_put(struct ion_buffer *buffer)
 		buffer->vaddr = NULL;
 	}
 }
-EXPORT_SYMBOL(ion_map_kernel);
 
 static void ion_handle_kmap_put(struct ion_handle *handle)
 {
@@ -800,7 +799,6 @@ static void ion_unmap_dma_buf(struct dma_buf_attachment *attachment,
 			      enum dma_data_direction direction)
 {
 }
-EXPORT_SYMBOL(ion_client_destroy);
 
 static int ion_buffer_alloc_dirty(struct ion_buffer *buffer)
 {
@@ -1203,50 +1201,6 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				sizeof(struct ion_custom_data)))
 			return -EFAULT;
 		return dev->custom_ioctl(client, data.cmd, data.arg);
-	}
-
-	case ION_IOC_FLUSH_CACHED:
-	{
-		struct ion_cached_user_buf_data data;
-		int ret;
-
-		if (copy_from_user(&data, (void __user *)arg, sizeof(data)))
-			return -EFAULT;
-		if (!ion_handle_validate(client, data.handle)) {
-			pr_err("%s: invalid handle passed to cache flush ioctl.\n",
-			       __func__);
-			mutex_unlock(&client->lock);
-			return -EINVAL;
-		}
-
-		ret = ion_flush_cached(data.handle, data.size, data.vaddr);
-		if (ret)
-			return ret;
-		if (copy_to_user((void __user *)arg, &data, sizeof(data)))
-			return -EFAULT;
-		break;
-	}
-
-	case ION_IOC_INVAL_CACHED:
-	{
-		struct ion_cached_user_buf_data data;
-		int ret;
-
-		if (copy_from_user(&data, (void __user *)arg, sizeof(data)))
-			return -EFAULT;
-		if (!ion_handle_validate(client, data.handle)) {
-			pr_err("%s: invalid handle passed to cache inval ioctl.\n",
-			       __func__);
-			mutex_unlock(&client->lock);
-			return -EINVAL;
-		}
-
-		ret = ion_inval_cached(data.handle, data.size, data.vaddr);
-		if (ret)
-			return ret;
-		if (copy_to_user((void __user *)arg, &data, sizeof(data)))
-			return -EFAULT;
-		break;
 	}
 
 	default:
