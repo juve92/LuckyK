@@ -284,13 +284,13 @@ static int _rpmsg_omx_buffer_lookup(struct rpmsg_omx_instance *omx,
 			}
 		}
 	}
-#endif
-
+#else
 	/* is it a tiler virtual address? */
 	/* This usage is deprecated, and is present only for non-ION backward
 	 * compatibility reasons.
 	 */
 	ret = _rpmsg_pa_to_da(omx, (phys_addr_t)tiler_virt2phys(buffer), va);
+#endif
 exit:
 	if (ret)
 		pr_err("%s: buffer lookup failed %x\n", __func__, ret);
