@@ -628,7 +628,7 @@ static int __init tuna_i2c_init(void)
 
 	omap4_pmic_init("twl6030", &tuna_twldata,
 			&twl6040_data, OMAP44XX_IRQ_SYS_2N);
-	omap_register_i2c_bus(2, 400, tuna_i2c2_boardinfo,
+	omap_register_i2c_bus(2, 100, tuna_i2c2_boardinfo,
                               ARRAY_SIZE(tuna_i2c2_boardinfo));
 	omap_register_i2c_bus(3, 400, NULL, 0);
 
