@@ -2194,7 +2194,10 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 				if (err)
 					goto err;
 			}
-			mmc_card_set_ddr_mode(card);
+			if (ddr)
+			    mmc_card_set_ddr_mode(card);
+			else
+				mmc_card_set_highspeed(card);
 			mmc_set_timing(card->host, MMC_TIMING_UHS_DDR50);
 			mmc_set_bus_width(card->host, bus_width);
 		}
