@@ -28,6 +28,14 @@
 #include "cm2_44xx.h"
 #include "cm-regbits-44xx.h"
 
+/*
+ * Temporarily define the CMA base address explicitly.
+ *
+ * This will go away as soon as we have the IOMMU-based generic
+ * DMA API in place.
+ */
+#define OMAP_RPROC_CMA_BASE	(0xa9800000)
+
 #define OMAP4430_CM_M3_M3_CLKCTRL (OMAP4430_CM2_BASE + OMAP4430_CM2_CORE_INST \
 		+ OMAP4_CM_DUCATI_DUCATI_CLKCTRL_OFFSET)
 
