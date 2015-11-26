@@ -28,23 +28,6 @@
 #include "cm2_44xx.h"
 #include "cm-regbits-44xx.h"
 
-/* CONTROL_DSP_BOOTADDR
- * Description: DSP boot loader physical address. It strores the boot address,
- * from which DSP will start executing code after taken out of reset.
- * This register belongs to the SYSCTRL_GENERAL_CORE set of registers
- * of the OMAP4's Control Module.
- */
-#define OMAP4430_CONTROL_DSP_BOOTADDR (0x4A002304)
-
-/*
- * Temporarily define the CMA base address explicitly.
- *
- * This will go away as soon as we have the IOMMU-based generic
- * DMA API in place.
- */
-#define OMAP_RPROC_CMA_BASE_IPU	(0xa9000000)
-#define OMAP_RPROC_CMA_BASE_DSP	(0xa8800000)
-
 #define OMAP4430_CM_M3_M3_CLKCTRL (OMAP4430_CM2_BASE + OMAP4430_CM2_CORE_INST \
 		+ OMAP4_CM_DUCATI_DUCATI_CLKCTRL_OFFSET)
 
@@ -55,16 +38,15 @@ static struct omap_rproc_timers_info ipu_timers[] = {
 	{ .id = 9 },
 	{ .id = 11 },
 #endif
-	{ .id = 4 },
 };
 
 static struct omap_rproc_pdata omap4_rproc_data[] = {
 	{
-		.name		= "dsp_c0",
-		.firmware	= "tesla-dsp.xe64T",
-		.mbox_name	= "mailbox-2",
+		.name		= "dsp",
+		.iommu_name	= "tesla",
+		.firmware	= "tesla-dsp.bin",
 		.oh_name	= "dsp_c0",
-		.boot_reg	= OMAP4430_CONTROL_DSP_BOOTADDR,
+		.clkdm_name	= "dsp_clkdm",
 	},
 	{
 		.name		= "ipu",
@@ -84,50 +66,11 @@ static struct omap_rproc_pdata omap4_rproc_data[] = {
 	},
 };
 
-static struct omap_iommu_arch_data omap4_rproc_iommu[] = {
-	{ .name = "dsp" },
-	{ .name = "ipu" },
-};
-
 static struct omap_device_pm_latency omap_rproc_latency[] = {
 	{
 		OMAP_RPROC_DEFAULT_PM_LATENCY,
 	},
 };
-
-
-static struct platform_device omap4_tesla = {
-	.name	= "omap-rproc",
-	.id	= 0,
-};
-
-static struct platform_device omap4_ducati = {
-	.name	= "omap-rproc",
-	.id	= 1,
-};
-
-static struct platform_device *omap4_rproc_devs[] __initdata = {
-	&omap4_tesla,
-	&omap4_ducati,
-};
-
-void __init omap_rproc_reserve_cma(void)
-{
-	int ret;
-	/* reserve CMA memory for OMAP4's dsp "tesla" remote processor */
-	ret = dma_declare_contiguous(&omap4_tesla.dev,
-					CONFIG_OMAP_TESLA_CMA_SIZE,
-					OMAP_RPROC_CMA_BASE_DSP , 0);
-	if (ret)
-		pr_err("dma_declare_contiguous failed for dsp %d\n", ret);
-
-	/* reserve CMA memory for OMAP4's M3 "ducati" remote processor */
-	ret = dma_declare_contiguous(&omap4_ducati.dev,
-					CONFIG_OMAP_DUCATI_CMA_SIZE,
-					OMAP_RPROC_CMA_BASE_IPU, 0);
-	if (ret)
-		pr_err("dma_declare_contiguous failed for ipu %d\n", ret);
-}
 
 static struct rproc_mem_pool *omap_rproc_get_pool(const char *name)
 {
@@ -208,18 +151,6 @@ static int __init omap_rproc_init(void)
 					omap_rproc_latency,
 					ARRAY_SIZE(omap_rproc_latency),
 					false);
-
-		/*
-		 * decrement the timer count for OMAP5 as ipu will be run
-		 * in SMP-mode. OMAP4 is hard-coded to run non-SMP, and this
-		 * logic needs to be adjusted if OMAP4 IPU is also required to
-		 * be run in SMP-mode.
-		 */
-		if (!cpu_is_omap44xx() && !strcmp(oh_name, "ipu_c0"))
-			omap4_rproc_data[i].timers_cnt--;
-
-		device_initialize(&pdev->dev);
-
 		if (IS_ERR(od)) {
 			pr_err("Could not build omap_device for %s:%s\n",
 							pdev_name, oh_name);
