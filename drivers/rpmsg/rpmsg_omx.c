@@ -363,7 +363,7 @@ long rpmsg_omx_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 				_IOC_NR(cmd), ret);
 			return -EFAULT;
 		}
-		data.handle = ion_import_fd(omx->ion_client, data.fd);
+		data.handle = ion_import_dma_buf(omx->ion_client, data.fd);
 		if (IS_ERR(data.handle))
 			data.handle = NULL;
 		if (copy_to_user(&data, (char __user *) arg, sizeof(data))) {
