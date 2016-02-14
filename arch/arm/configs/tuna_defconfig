@@ -306,19 +306,9 @@ CONFIG_OMAP_REMOTEPROC_MEMPOOL_SIZE=0x0
 # CONFIG_OMAP_PM_NONE is not set
 # CONFIG_OMAP_PM_NOOP is not set
 CONFIG_OMAP_PM=y
-# Note: unless you want to debug CMA allocators
-# and other really interesting memory management
-# stuff, it's suggested to keep ION CMA carveout
-# aligned to 8MB. Both TILER2D_SIZE and
-# IOBUFS_SIZE below were selected to satisfy
-# this constraint, be careful when changing these.
-CONFIG_ION_OMAP_TILER2D_SIZE=61
-CONFIG_ION_OMAP_IPU_MEM_IOBUFS_SIZE=21
-# Close-to-the-original settings - good
-# for testing the behavior under higher memory
-# pressure.
-#CONFIG_ION_OMAP_TILER2D_SIZE=69
-#CONFIG_ION_OMAP_IPU_MEM_IOBUFS_SIZE=85
+# CONFIG_ION_OMAP_TILER2D_SIZE is not set
+CONFIG_ION_OMAP_TILER_DYNAMIC_ALLOC=y
+CONFIG_ION_OMAP_IPU_MEM_IOBUFS_SIZE=10
 CONFIG_CMA_DEBUG=y
 CONFIG_CMA_DEBUG_VERBOSE=y
 
